@@ -1,6 +1,7 @@
 # Игнорировать виртуальное окружение
 .venv/
 venv/
+*.env
 
 # Byte-compiled / optimized / DLL files
 **/__pycache__/
@@ -14,7 +15,11 @@ venv/
 # Игнорировать другие ненужные файлы
 *.log
 *.sqlite3
-*.env
+paper/main.toc
+paper/main.log
+paper/main.aux
+paper/main.out
+paper/main.synctex.gz
 
 # Игнорируются папки
 logs/
