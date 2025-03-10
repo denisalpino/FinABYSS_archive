@@ -1,0 +1,123 @@
+% Глобальные поля
+\usepackage[left=30mm, top=20mm, right=15mm, bottom=20mm,nohead, includefoot,footskip=35pt]{geometry}
+
+% Язык, кодировка, шрифт
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[english]{babel}
+\renewcommand{\rmdefault}{Tempora-TLF}
+
+% Межстрочный интервал = 1.5pt
+\usepackage{setspace}
+\onehalfspacing
+
+% Абзацный отступ = 1.25см
+\usepackage{indentfirst}
+\setlength\parindent{12.5mm}
+
+% Пакет для содержания
+\usepackage{tocloft}
+
+% Команда для специальных разделов (введение, обзор литературы, etc)
+% Не нумеруются в содержании, по уровню вложенности:
+\newcommand{\specialsection}[1]{
+    \phantomsection
+    \bigskip\smallskip\hspace{-13.8mm}
+    \normalfont\fontsize{12}{12}\textbf{#1}
+    \par\bigskip\normalfont\normalsize
+    \addcontentsline{toc}{section}{#1}
+}
+
+% Размеры заголовков разделов и подразделов
+\usepackage{titlesec}
+% Раздел: 12pt, добавляем слово "CHAPTER"
+\titleformat{\section}
+{\fontsize{12}{12}\bfseries}{
+\hspace{-1.5mm}CHAPTER \thesection. \hskip-1em}{1em}{}
+% Подраздел: 12pt
+\titleformat{\subsection}
+{\fontsize{12}{12}\bfseries}{\hspace{-0.2mm}\thesubsection}{1em}{}
+
+% Содержание
+\renewcommand{\cfttoctitlefont}{\centering\normalsize\bfseries}
+\renewcommand{\cftaftertoctitle}{\hfill}
+
+% Слово "Глава" в содержании
+\renewcommand{\cftsecpresnum}{CHAPTER\space}
+\newlength\mylength
+\settowidth\mylength{\cftsecpresnum}
+\addtolength\cftsecnumwidth{\mylength}
+% Строки с точками
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+% Точки после цифр в в содержании
+\renewcommand{\cftsecaftersnum}{.}
+\renewcommand{\cftsubsecaftersnum}{.}
+% Подровнять subsection под точку главы
+% (если глав будет больше десяти, будет чуть хуже)
+\setlength{\cftsubsecindent}{2.68em}
+% Интервал глав
+\setlength{\cftbeforesecskip}{4pt}
+
+\renewcommand{\cftsecpagefont}{\normalfont}
+
+% Шрифт подписи (caption) = 12pt
+% (Повезло, что small как раз равен 12pt)
+\usepackage[font=small,labelfont=bf]{caption}
+
+% Пакет, который позволяет собирать один документ TeX из нескольких
+\usepackage{import}
+
+% Пакет, реализующий гиперссылки. Никакого расскрашивания
+\usepackage[colorlinks=false,unicode=true]{hyperref}
+
+\newcommand{\ITEM}{\vspace{-0.2cm}\item}
+\newcommand{\MList}[1]{\par\begin{itemize}#1\end{itemize}}
+\newcommand{\NList}[1]{\par\begin{enumerate}#1\end{enumerate}}
+
+% Нумерация только тех формул, на которые в тексте присутствует ссылка
+\usepackage{autonum}
+
+% Список литературы
+\makeatletter
+\renewenvironment{thebibliography}[1]
+    {%
+      \bigskip
+      {\noindent\normalfont\bfseries References\par}%
+      \addcontentsline{toc}{section}{References}%
+      \smallskip
+      \list{\@biblabel{\@arabic\c@enumiv}}%
+           {%
+             \settowidth\labelwidth{\@biblabel{#1}}%
+             \leftmargin\labelwidth
+             \advance\leftmargin\labelsep
+             \@openbib@code
+             \usecounter{enumiv}%
+             \let\p@enumiv\@empty
+             \renewcommand\theenumiv{\@arabic\c@enumiv}%
+           }%
+      \sloppy
+      \clubpenalty4000
+      \@clubpenalty \clubpenalty
+      \widowpenalty4000%
+      \sfcode`\.\@m%
+    }%
+    {%
+      \def\@noitemerr
+        {\@latex@warning{Empty `thebibliography' environment}}%
+      \endlist%
+    }
+\makeatother
+
+
+
+% Пакеты по желанию (самые распространенные)
+% Хитрые мат. символы
+\usepackage{euscript}
+% Таблицы
+\usepackage{longtable}
+\usepackage{makecell}
+% Картинки (можно встявлять даже pdf)
+\usepackage[pdftex]{graphicx}
+
+\usepackage{amsthm,amssymb,amsmath}
+\usepackage{textcomp}

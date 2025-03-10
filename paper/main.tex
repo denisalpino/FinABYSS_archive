@@ -1,0 +1,72 @@
+\documentclass[a4paper,12pt]{extarticle}
+\input{preamble.tex}
+
+\begin{document}
+    % Оглавление
+    \input{struct/title.tex}
+    \pagebreak
+
+    % Заявлениее о самостоятльности
+    \input{}
+    \pagebreak
+
+    % Оглавленине
+    \tableofcontents{}
+    \pagebreak
+
+    \specialsection{Introduction}
+    <<...>>
+
+    % Первая теоретическая глава
+    \newpage
+    \section{THEORETICAL OVERVIEW}
+    \subsection{Problem statement}
+    <<...>>
+
+    \subsection{Methodology}
+    <<...>>
+
+    \subsubsection{Literature review}
+    <<...>>
+
+    \subsubsection{Tool review}
+    <<...>>
+
+    % Вторая практическая глава
+    \newpage
+    \section{PRACTICAL SOLUTION}
+    \subsection{Data engineering}
+    <<...>>
+
+    \subsubsection{Data capture}
+    <<...>>
+
+    \subsubsection{Data processing}
+    <<...>>
+
+    \subsection{Architetcture}
+    <<...>>
+
+    \subsubsection{Aspect-based block}
+    <<...>>
+
+    \subsubsection{Sentimental block}
+    <<...>>
+
+    \subsubsection{Predictive block}
+    <<...>>
+
+    \subsection{Recommendations}
+    <<...>>
+
+    \specialsection{Conclusion}
+    <<...>>
+
+    % Библиография в cpsconf стиле
+    % Аргумент {1} ниже включает переопределенный стиль с выравниванием слева
+    \begin{thebibliography}{1}
+        \bibitem{voc} Griffin D.W., Lim J.S. \flqq Multiband excitation vocoder\frqq. IEEE ASSP-36 (8), 1988, pp. 1223-1235.
+        \bibitem{vo2} Griffin D.W., Lim J.S. \flqq Multiband  vocoder\frqq. IEEE ASSP-36 (8).
+        \bibitem{vo3} Griffin D.W. \flqq Multiband \frqq. IEEE ASSP-36 (8).
+    \end{thebibliography}
+\end{document}

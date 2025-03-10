@@ -1,0 +1,19 @@
+\providecommand \autonum@processReference [2]{}
+\babel@toc {english}{}\relax 
+\contentsline {section}{Introduction}{3}{section*.1}%
+\contentsline {section}{\numberline {1}THEORETICAL OVERVIEW}{4}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Problem statement}{4}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Methodology}{4}{subsection.1.2}%
+\contentsline {subsubsection}{\numberline {1.2.1}Literature review}{4}{subsubsection.1.2.1}%
+\contentsline {subsubsection}{\numberline {1.2.2}Tool review}{4}{subsubsection.1.2.2}%
+\contentsline {section}{\numberline {2}PRACTICAL SOLUTION}{5}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Data engineering}{5}{subsection.2.1}%
+\contentsline {subsubsection}{\numberline {2.1.1}Data capture}{5}{subsubsection.2.1.1}%
+\contentsline {subsubsection}{\numberline {2.1.2}Data processing}{5}{subsubsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.2}Architetcture}{5}{subsection.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.1}Aspect-based block}{5}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.2}Sentimental block}{5}{subsubsection.2.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.3}Predictive block}{5}{subsubsection.2.2.3}%
+\contentsline {subsection}{\numberline {2.3}Recommendations}{5}{subsection.2.3}%
+\contentsline {section}{Conclusion}{5}{section*.2}%
+\contentsline {section}{References}{5}{section*.2}%
