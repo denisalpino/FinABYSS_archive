@@ -4,3 +4,16 @@
 ```alias pipreqsnb='pipreqsnb --ignore .venv,venv --force'```
 
 [Репозиторий](https://github.com/itonik/spbu_diploma/tree/master) с LaTeX-шаблоном для ВКР по ГОСТам
+
+Ключевые зависимости:
+- [BERTopic](https://github.com/MaartenGr/BERTopic);
+- [alpha_vantage](https://github.com/RomelTorres/alpha_vantage);
+- [PyTorch](https://github.com/pytorch/pytorch);
+- [TensorBoard](https://pytorch.org/tutorials/recipes/recipes/tensorboard_with_pytorch.html) (доки по работе с PyTorch)
+-
+
+Последовательность установок:
+1. ```pip install bertopic```
+2. ```pip install torch torchvision```
+3. ```pip install tensorboard```
+4. ```pip install alpha_vantage```
