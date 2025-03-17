@@ -1,12 +1,14 @@
-from aiohttp import ClientSession
-from asyncio import sleep, gather, Semaphore, TimeoutError, run
-from ua_generator import generate
-from selectolax.parser import HTMLParser
-
-from typing import Any, Coroutine, Iterable, List, Literal, NoReturn, Set, Optional
+# Standart library
+from asyncio import sleep, gather, Semaphore, TimeoutError, create_task
 from dataclasses import dataclass, field
-import time
-import random
+from random import uniform
+from time import time
+from typing import Any, Coroutine, Iterable, List, Literal, Set, Optional
+
+# External libraries
+from aiohttp import ClientSession
+from selectolax.parser import HTMLParser
+from ua_generator import generate
 
 import pandas as pd
 import polars as pl
@@ -38,6 +40,14 @@ HEADERS = {
 }
 
 
+def format_seconds(seconds):
+    """Convert seconds to hours/minutes/seconds for TQDM widget"""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    seconds = int(seconds % 60)
+    return f"{hours} h. {minutes} min. {seconds} sec."
+
+
 @dataclass(slots=True)
 class ParserState:
     parse_failed: Set[str] = field(default_factory=set)
@@ -55,8 +65,8 @@ class Selectors:
     BUTTON_ELEMENT: str = "a"
 
 
-class YFParser:
-
+class YahooFinanceParser:
+    # TODO: unite with article parser
     def __init__(self) -> None:
         self.state = ParserState()
         self.selectors = Selectors()
@@ -128,7 +138,6 @@ class YFParser:
                 return start_button_text in last_button.text()
         return True
 
-
     async def fetch_page(self, url: str) -> Optional[HTMLParser]:
         """
         Description
@@ -183,7 +192,7 @@ class YFParser:
         }
 
         async with self.max_requests:
-            await sleep(random.uniform(*self.req_delay_range))
+            await sleep(uniform(*self.req_delay_range))
 
             try:
                 response = await self.state.session.get(url, headers=headers)
@@ -309,7 +318,6 @@ class YFParser:
             f"https://finance.yahoo.com/sitemap/{date.strftime("%Y_%m_%d")}"
             for date in pd.date_range(start, end, inclusive="left")
         ]
-
         size = 8190 * 2
 
         # Opening the session
@@ -318,8 +326,31 @@ class YFParser:
             # Variables for tracking progress and stopping work
             iter_counter, current_retry, was_progress = 1, 0, True
 
+            # Create TQDM widget for Jupyter Notebooks launching
+            # ========================================================================================== #
+            pbar = tqdm(
+                total=len(dates),
+                desc=f"Iteration {iter_counter}",
+                bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
+                postfix="0 h. 0 min. 0 sec."
+            )
+            start_time = time()
+
+            def update_task(_, pbar=pbar, start=start_time):
+                elapsed = time() - start
+                pbar.set_postfix_str(format_seconds(elapsed))
+                pbar.update(1)
+
+            tasks = []
+            for date in dates:
+                task = create_task(self._process_page_of_links(date))
+                task.add_done_callback(update_task)
+                tasks.append(task)
+            # ========================================================================================== #
             # Run the first main wave to complete the `parse_failed` set
-            await gather(*[self._process_page_of_links(date) for date in dates])
+            await gather(*tasks)
+            pbar.close()
+
             first_wave_results = len(self.state.news_urls)
             print(
                 f"At iteration №{iter_counter} were collected {first_wave_results} URLs\n"
@@ -332,15 +363,32 @@ class YFParser:
                 iter_counter += 1
                 previous_iter_parse_failed = self.state.parse_failed.copy()
                 previous_iter_results = len(self.state.news_urls)
-
-                tasks = [self._process_page_of_links(failed_link) for failed_link in self.state.parse_failed]
+                # Create TQDM widget for Jupyter Notebooks launching
+                # ========================================================================================== #
+                pbar = tqdm(
+                    total=len(self.state.parse_failed),
+                    desc=f"Iteration {iter_counter}",
+                    bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
+                    postfix="0 h. 0 min. 0 sec."
+                )
+                start_time = time()
+                tasks = []
+                for failed_link in self.state.parse_failed:
+                    task = create_task(self._process_page_of_links(failed_link))
+                    task.add_done_callback(update_task)
+                    tasks.append(task)
+                # ========================================================================================== #
                 await gather(*tasks)
+                pbar.close()
+
                 current_iter_progress = len(previous_iter_parse_failed - self.state.parse_failed)
                 current_iter_results = len(self.state.news_urls)
 
                 print(
-                    f"At iteration №{iter_counter} URLs were processed: {current_iter_progress} out of {len(previous_iter_parse_failed)}\n"
-                    f"Collected URLs per iteration: {current_iter_results - previous_iter_results}\n"
+                    f"At iteration №{iter_counter} URLs were processed: "
+                    f"{current_iter_progress} out of {len(previous_iter_parse_failed)}\n"
+                    "Collected URLs per iteration: "
+                    f"{current_iter_results - previous_iter_results}\n"
                     "=================================================================="
                 )
 
