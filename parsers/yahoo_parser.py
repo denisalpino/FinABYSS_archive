@@ -10,6 +10,7 @@ from typing import Collection, Dict, Iterable, List, Literal, Never, NoReturn, S
 # External libraries
 from aiohttp import ClientSession
 from selectolax.parser import HTMLParser
+from sympy import false
 from ua_generator import generate
 
 import polars as pl
@@ -576,9 +577,11 @@ class YahooFinanceParser:
         }
 
     def __is_premium_article(self, tree: HTMLParser) -> bool:
-        ...
+        """Checks if article is available only with PERMIUM access"""
+        return True if tree.css_first(self.selectors.ARTICLE_PREMIUM) else False
 
     async def get_article(self, url: str):
+
         self.state.articles_in_progress.add(url)
 
         # Get the HTML tree of the passed `url`
@@ -587,16 +590,35 @@ class YahooFinanceParser:
             # Couldn't get the tree
             self.state.articles_in_progress.discard(url)
             self.state.articles_failed.add(url)
-            return None
+            print("no tree", url)
+            print("================================================")
+            return {
+                "title": '',
+                "source": '',
+                "datetime": '',
+                "assets": [''],
+                "text": '',
+                "url": url
+            }
 
-        if self.__is_premium_article():
-            ...
+        if self.__is_premium_article(tree):
+            self.state.articles_in_progress.discard(url)
+            print("Платная статья", url)
+            print("================================================")
+            return {
+                "title": '',
+                "source": '',
+                "datetime": '',
+                "assets": [''],
+                "text": '',
+                "url": url
+            }
 
         try:
             article_data = self.parse_article(tree, url)
         except Exception as e:
-            print(url)
-            print(e)
+            print("Ошибка", e, url)
+            print("================================================")
             self.state.pages_in_progress.discard(url)
             self.state.pages_failed.discard(url)
             return {
@@ -607,7 +629,8 @@ class YahooFinanceParser:
                 "text": '',
                 "url": url
             }
-
+        print("Все ок:", article_data)
+        print("================================================")
         self.state.pages_in_progress.discard(url)
         self.state.pages_failed.discard(url)
 
