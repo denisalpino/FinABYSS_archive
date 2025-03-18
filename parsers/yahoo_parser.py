@@ -3,14 +3,14 @@ from asyncio import sleep, gather, Semaphore, TimeoutError, create_task
 from dataclasses import dataclass, field
 from random import uniform
 from time import time
-from typing import Any, Coroutine, Iterable, List, Literal, Set, Optional
+import datetime
+from typing import Any, Collection, Dict, Iterable, List, Literal, Never, NoReturn, Set, Optional, Union
 
 # External libraries
 from aiohttp import ClientSession
 from selectolax.parser import HTMLParser
 from ua_generator import generate
 
-import pandas as pd
 import polars as pl
 from tqdm.notebook import tqdm
 
@@ -50,29 +50,57 @@ def format_seconds(seconds):
 
 @dataclass(slots=True)
 class ParserState:
-    parse_failed: Set[str] = field(default_factory=set)
-    in_progress: Set[str] = field(default_factory=set)
+    pages_failed: Set[str] = field(default_factory=set)
+    pages_in_progress: Set[str] = field(default_factory=set)
+    articles_failed: Set[str] = field(default_factory=set)
+    articles_in_progress: Set[str] = field(default_factory=set)
     news_urls: Set[str] = field(default_factory=set)
     session: Optional[ClientSession] = None
 
 
 @dataclass(slots=True)
 class Selectors:
+    # ==================================== #
+    #          SITEMAP SELECTORS           #
+    # ==================================== #
     NEWS_LIST: str = "main > div > div > div > ul"
     NEWS_LIST_ELEMENT: str = "li > a"
     ERROR_404: str = "body > table"
     MAIN_CONTENT: str = "div.sitemapcontent"
     BUTTON_ELEMENT: str = "a"
+    # ==================================== #
+    #          ARTICLE SELECTORS           #
+    # ==================================== #
+    ARTICLE_FIGURE: str = "figure.yf-8xybrv"
+    ARTICLE_TABLE: str = "div.table-container.yf-t4vsm6"
+    ARTICLE_ADS: str = "div.wrapper.yf-eondll"
+    ARTICLE_VISIBLE_TEXT: str = "div.atoms-wrapper"
+    ARTICLE_HIDDEN_TEXT: str = "div.read-more-wrapper"
+    ARTICLE_ASSETS_WRRAPPER: str = "div.ticker-list.yf-pqeumq"
+    ARTICLE_ASSETS_LEVEL: str = "div.scroll-carousel.yf-r5lvmz"
+    ARTICLE_ASSET: str = "span.symbol.yf-1fqyif7"
+    ARTICLE_TITLE: str = "div.cover-title.yf-1rjrr1"
+    ARTICLE_DATETIME_TAG: str = "time.byline-attr-meta-time"
+    ARTICLE_DATETIME_ATTR: str = "datetime"
+    ARTICLE_SOURCE_TAG: str = "div.cover-wrap div.top-header a"
+    ARTICLE_SOURCE_ATTR: str = "title"
 
 
 class YahooFinanceParser:
-    # TODO: unite with article parser
-    def __init__(self) -> None:
+    # TODO: make article parser
+    def __init__(
+            self, max_requests: int = 14, iter_delay: int = 30,
+            req_delay_range: Iterable[int] | Iterable[float] = (4, 5)
+    ) -> None:
         self.state = ParserState()
         self.selectors = Selectors()
-        self.max_requests = Semaphore(14)
-        self.iter_delay = 30
-        self.req_delay_range = (4, 5)
+        self.max_requests = Semaphore(max_requests)
+        self.iter_delay = iter_delay
+        self.req_delay_range = req_delay_range
+
+    # ==================================== #
+    #          SITEMAP FUNCTIONS           #
+    # ==================================== #
 
     def __is_empty_page(self, tree: HTMLParser) -> bool:
         """
@@ -138,6 +166,239 @@ class YahooFinanceParser:
                 return start_button_text in last_button.text()
         return True
 
+    def __parse_links(self, tree: HTMLParser) -> Union[Set[str], Set[Never]]:
+        news_list = tree.css_first(self.selectors.NEWS_LIST)
+
+        return {
+            node.attributes.get("href")
+            for node in news_list.css(self.selectors.NEWS_LIST_ELEMENT)
+            if node and node.attributes.get('href')
+        }  # type: ignore
+
+    def __get_next_page(self, tree: HTMLParser) -> Optional[str]:
+        button_level = tree.css_first(self.selectors.NEWS_LIST).next
+
+        # То есть всегда, потому что наличие кнопок проверяли ранее
+        if button_level:
+            next_button = button_level.css(self.selectors.BUTTON_ELEMENT)[-1]
+            return next_button.attributes.get('href') if next_button else None
+        return None
+
+    async def _process_page_of_links(self, url: str) -> None:
+        """
+        Функция
+
+        Parameters
+        ---
+        url: str
+            url to page with links to news articles (i.e. "https://finance.yahoo.com/sitemap/YYYY_MM_DD"
+            may have an additional termination "_start" with 17 digits)
+
+        Raises
+        ---
+        Exception
+            "There is no links on this page: {url}"  or "There is no button level or 'Next' button on this page: {url}":
+            if it wasn't detected in `fetch_page()`, `_is_empty_page()` or `_is_end_page()`.
+        """
+        # Скорее всего данная проверка лишняя, но пускай будет, чтобы просто перестраховаться
+        if url in self.state.pages_in_progress:
+            return None
+
+        self.state.pages_in_progress.add(url)
+
+        # Get the HTML tree of the passed `url`
+        tree = await self.fetch_page(url)
+        if tree is None:
+            # Couldn't get the tree
+            self.state.pages_in_progress.discard(url)
+            self.state.pages_failed.add(url)
+            return None
+        elif self.__is_empty_page(tree):
+            # Страница пустая
+            self.state.pages_failed.add(url)
+            return None
+        elif self.__is_end_page(tree):
+            # Страница последняя для ветки дня
+            self.state.pages_in_progress.discard(url)
+            return None
+
+        if links := self.__parse_links(tree):
+            self.state.news_urls.update(links) # type: ignore
+        else:
+            raise Exception(f"There is no links on this page: {url}")
+
+        # Если кнопок не будет, то страница отлетит сразу после `_is_end_page()` выше
+        if next_url := self.__get_next_page(tree):
+            await self._process_page_of_links(next_url)
+        else:
+            raise Exception(f"There is no button level or 'Next' button on this page: {url}")
+
+        self.state.pages_in_progress.discard(url)
+        self.state.pages_failed.discard(url)
+        return None
+
+    async def get_all_news_in_range(
+            self, start: str, end: str,
+            retry: Union[Literal["non_stop"], int],
+            iter_delay: Union[int, float] = 30,
+            req_delay_range: Iterable[Union[float, int]] = (4, 5),
+            max_requests: int = 14
+    ) -> Set[str]:
+        """
+        Parameters
+        ---
+        start: str
+            Parsing start date in YYYY-MM-DD format
+        end: str:
+            Parsing end date in YYYY-MM-DD format (inclusively)
+        retry: typing.Literal["non_stop"] | int:
+            When there is an initial problem accessing a page, it is placed in the `pages_failed`
+            set. The `retry` parameter defines the maximum number of iterations for parsing links
+            from url's in `pages_failed`.
+        iter_delay: int | float = 30
+            Defines the delay between iterations on parsing url's from the `pages_failed` set
+        req_delay_range: typing.Iterable[float | int] = (4, 5)
+            Determines the delay before the GET-request is executed
+        max_requests: int = 14
+            Maximum number of requests that can be executed asynchronously (for parsing links
+            to news articles, a value of 14 is highly recommended, as otherwise 404 and 429 error
+            codes will become more frequent).
+
+        Notes
+        ---
+        If setting retry does not help and the links are not all parsed,
+        it means that Yahoo! Finance is blocking your IP address,
+        change/enable your proxy.
+        """
+
+        # Convert dates to the required format
+        start = datetime.date(*map(int, start.split("-"))) # type: ignore
+        end = datetime.date(*map(int, end.split("-"))) # type: ignore
+        urls = [
+            f"https://finance.yahoo.com/sitemap/{dt.strftime("%Y_%m_%d")}"
+            for dt in pl.date_range(start, end, closed="left", eager=True)
+        ]
+
+        results = await self.get_all_news(
+            urls, retry=retry, iter_delay=iter_delay,
+            req_delay_range=req_delay_range, max_requests=max_requests
+        )
+        return results
+
+    async def get_all_news(
+            self, urls: Collection, retry: Union[Literal["non_stop"], int],
+            iter_delay: Union[int, float] = 30,
+            req_delay_range: Iterable[Union[float, int]] = (4, 5),
+            max_requests: int = 14
+    ):
+        """retry -1"""
+        self.iter_delay = iter_delay
+        self.req_delay_range = req_delay_range
+        self.max_requests = Semaphore(max_requests)
+
+        size = 8190 * 2
+
+        # Opening the session
+        async with ClientSession(max_line_size=size, max_field_size=size) as session:
+            self.state.session = session
+            # Variables for tracking progress and stopping work
+            iter_counter, current_retry, was_progress = 1, 0, True
+
+            # Create TQDM widget for Jupyter Notebooks launching
+            # ========================================================================================== #
+            pbar = tqdm(
+                total=len(urls),
+                desc=f"Iteration {iter_counter}",
+                bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
+                postfix="0 h. 0 min. 0 sec."
+            )
+            start_time = time()
+
+            def update_task(_, pbar=pbar, start=start_time):
+                elapsed = time() - start
+                pbar.set_postfix_str(format_seconds(elapsed))
+                pbar.update(1)
+
+            tasks = []
+            for url in urls:
+                task = create_task(self._process_page_of_links(url))
+                task.add_done_callback(update_task)
+                tasks.append(task)
+            # ========================================================================================== #
+            # Run the first main wave to complete the `pages_failed` set
+            await gather(*tasks)
+            pbar.close()
+
+            first_wave_results = len(self.state.news_urls)
+            print(
+                f"At iteration №{iter_counter} were collected {first_wave_results} URLs\n"
+                "=================================================================="
+            )
+
+            if retry == -1:
+                self.state.session = None
+                return self.state.news_urls
+            
+            # Run the second additional wave
+            while self.state.pages_failed:
+                await sleep(self.iter_delay)
+                iter_counter += 1
+                previous_iter_pages_failed = self.state.pages_failed.copy()
+                previous_iter_results = len(self.state.news_urls)
+                # Create TQDM widget for Jupyter Notebooks launching
+                # ========================================================================================== #
+                pbar = tqdm(
+                    total=len(self.state.pages_failed),
+                    desc=f"Iteration {iter_counter}",
+                    bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
+                    postfix="0 h. 0 min. 0 sec."
+                )
+                start_time = time()
+                def update_task(_, pbar=pbar, start=start_time):
+                    elapsed = time() - start
+                    pbar.set_postfix_str(format_seconds(elapsed))
+                    pbar.update(1)
+
+                tasks = []
+                for failed_link in self.state.pages_failed:
+                    task = create_task(self._process_page_of_links(failed_link))
+                    task.add_done_callback(update_task)
+                    tasks.append(task)
+                # ========================================================================================== #
+                await gather(*tasks)
+                pbar.close()
+
+                current_iter_progress = len(previous_iter_pages_failed - self.state.pages_failed)
+                current_iter_results = len(self.state.news_urls)
+
+                print(
+                    f"At iteration №{iter_counter} URLs were processed: "
+                    f"{current_iter_progress} out of {len(previous_iter_pages_failed)}\n"
+                    "Collected URLs per iteration: "
+                    f"{current_iter_results - previous_iter_results}\n"
+                    "=================================================================="
+                )
+
+                # Exit condition
+                if retry != "non_stop":
+                    if current_iter_progress == 0:
+                        if was_progress == True:
+                            current_retry, was_progress = 0, False
+                        current_retry += 1
+                        if current_retry >= retry:
+                            break
+                    else:
+                        was_progress = True
+
+        self.state.session = None
+        print(f"Total сollected URLs {len(self.state.news_urls)}")
+
+        return self.state.news_urls
+
+    # ==================================== #
+    #           GENERAL FUNCTION           #
+    # ==================================== #
+
     async def fetch_page(self, url: str) -> Optional[HTMLParser]:
         """
         Description
@@ -197,213 +458,121 @@ class YahooFinanceParser:
             try:
                 response = await self.state.session.get(url, headers=headers)
             except TimeoutError as error:
-                self.state.parse_failed.add(url)
                 print(error, url)
                 return None
 
             if response.status == 200:
-                http = await response.text()
-                tree = HTMLParser(http)
+                html = await response.text()
+                tree = HTMLParser(html)
                 return tree
-            else:
-                self.state.parse_failed.add(url)
-                if response.status not in (404, 429, 502):
-                    print(response.status, url)
-                return None
+            # elif response.status not in (404, 429, 502, 500):
+            print(response.status, url)
+            return None
 
-    def __parse_links(self, tree: HTMLParser) -> Set[str | None]:
-        news_list = tree.css_first(self.selectors.NEWS_LIST)
+    # ==================================== #
+    #          ARTICLE FUNCTIONS           #
+    # ==================================== #
 
+    def __get_source(self, tree: HTMLParser) -> str:
+        """Функция для извлечения заголовка новости"""
+        return (
+            tree
+            .css_first(self.selectors.ARTICLE_SOURCE_TAG)
+            .attributes
+            .get(self.selectors.ARTICLE_SOURCE_ATTR)
+        ) # type: ignore
+
+    def __get_datetime(self, tree: HTMLParser) -> str:
+        """Функция для извлечения заголовка новости. Возвращает в часовом поясе GMT-0"""
+        return (
+            tree
+            .css_first(self.selectors.ARTICLE_DATETIME_TAG)
+            .attributes
+            .get(self.selectors.ARTICLE_DATETIME_ATTR)
+        ) # type: ignore
+
+    def __get_title(self, tree: HTMLParser) -> str:
+        """Функция для извлечения заголовка новости"""
+        return tree.css_first(self.selectors.ARTICLE_TITLE).text()
+
+    def __get_assets(self, tree) -> Union[List[str], List[Never]]:
+        """Функция для извлечения тикеров из-под заголовка"""
+        assets: List[str] = []
+
+        # Проверяем есть ли тикеры
+        if assets_wrapper := tree.css_first(self.selectors.ARTICLE_ASSETS_WRRAPPER, default=None):
+            # Итерируемся по каждому соответствующему тикеру <div>
+            for asset_div in assets_wrapper.css(self.selectors.ARTICLE_ASSETS_LEVEL):
+                assets.append(
+                    asset_div
+                    .css_first(self.selectors.ARTICLE_ASSET)
+                    .text(strip=True)
+                )
+        return assets
+
+    def __prepare_text(self, tree: HTMLParser) -> NoReturn: # type: ignore
+        """
+        Данная функция убирает из дерева `tree` все элементы, которые не нужно парсить:
+            - изображения;
+            - рекламу;
+            - таблицы.
+        """
+        for selector in (self.selectors.ARTICLE_FIGURE, self.selectors.ARTICLE_TABLE, self.selectors.ARTICLE_ADS):
+            for node in tree.css(selector):
+                node.decompose() # Удаляем из всего HTML-документа блоки
+
+    def __parse_text(self, tree: HTMLParser) -> str:
+        # Удаляем все ненужное
+        self.__prepare_text(tree)
+
+        # Собираем видимый текст
+        visible_text = "\n".join(
+            [
+                paragraph.text()
+                for paragraph in tree.css_first(self.selectors.ARTICLE_VISIBLE_TEXT).iter()
+            ]
+        )
+        # Собираем скрытый текст
+        if hidden_text := tree.css_first(self.selectors.ARTICLE_HIDDEN_TEXT, default=None):
+            # Собираем текст по абзацам, добавляя переносы строк
+            hidden_text = "\n".join([paragraph.text() for paragraph in hidden_text.iter()])
+            # Собираем видимую часть со скрытой и возвращаем
+            return "\n".join((visible_text, hidden_text))
+        return visible_text
+
+    def parse_article(self, tree: HTMLParser, url: str) -> Dict[str, Union[str, Union[List[str], List[Never]]]]:
         return {
-            node.attributes.get("href")
-            for node in news_list.css(self.selectors.NEWS_LIST_ELEMENT)
-            if node and node.attributes.get('href')
+            "title": self.__get_title(tree),
+            "source": self.__get_source(tree),
+            "datetime": self.__get_datetime(tree),
+            "assets": self.__get_assets(tree),
+            "text": self.__parse_text(tree),
+            "url": url
         }
 
-    def __get_next_page(self, tree: HTMLParser) -> Optional[str]:
-        button_level = tree.css_first(self.selectors.NEWS_LIST).next
+    async def get_article(self, url: str):
+        self.state.articles_in_progress.add(url)
 
-        # То есть всегда, потому что наличие кнопок проверяли ранее
-        if button_level:
-            next_button = button_level.css(self.selectors.BUTTON_ELEMENT)[-1]
-            return next_button.attributes.get('href') if next_button else None
-        return None
-
-    async def _process_page_of_links(self, url: str) -> None:
-        """
-        Функция
-
-        Parameters
-        ---
-        url: str
-            url to page with links to news articles (i.e. "https://finance.yahoo.com/sitemap/YYYY_MM_DD"
-            may have an additional termination "_start" with 17 digits)
-
-        Raises
-        ---
-        Exception
-            "There is no links on this page: {url}"  or "There is no button level or 'Next' button on this page: {url}":
-            if it wasn't detected in `fetch_page()`, `_is_empty_page()` or `_is_end_page()`.
-        """
-        # Скорее всего данная проверка лишняя, но пускай будет, чтобы просто перестраховаться
-        if url in self.state.in_progress:
-            return None
-
-        self.state.in_progress.add(url)
-
-        # Получаем HTML-дерево переданного `url`
+        # Get the HTML tree of the passed `url`
         tree = await self.fetch_page(url)
-
         if tree is None:
-            # Не смогли получить дерево
-            self.state.in_progress.discard(url)
-            return None
-        elif self.__is_empty_page(tree):
-            # Страница пустая
-            self.state.parse_failed.add(url)
-            return None
-        elif self.__is_end_page(tree):
-            # Страница последняя для ветки дня
-            self.state.in_progress.discard(url)
+            # Couldn't get the tree
+            self.state.articles_in_progress.discard(url)
+            self.state.articles_failed.add(url)
             return None
 
-        if links := self.__parse_links(tree):
-            self.state.news_urls.update(links) # type: ignore
-        else:
-            raise Exception(f"There is no links on this page: {url}")
+        article_data = self.parse_article(tree, url)
 
-        # Если кнопок не будет, то страница отлетит сразу после `_is_end_page()` выше
-        if next_url := self.__get_next_page(tree):
-            await self._process_page_of_links(next_url)
-        else:
-            raise Exception(f"There is no button level or 'Next' button on this page: {url}")
+        self.state.pages_in_progress.discard(url)
+        self.state.pages_failed.discard(url)
 
-        self.state.in_progress.discard(url)
-        self.state.parse_failed.discard(url)
-        return None
+        return article_data
 
-    async def get_all_news_in_range(
-            self, start: str, end: str,
-            retry: Literal["non_stop"] | int,
-            iter_delay: int | float = 30, req_delay_range: Iterable[float | int] = (4, 5)
-    ) -> Set[str]:
-        """
-        Parameters
-        ---
-        start: str
-            Parsing start date in YYYY-MM-DD format
-        end: str:
-            Parsing end date in YYYY-MM-DD format (inclusively)
-        retry: typing.Literal["non_stop"] | int:
-            When there is an initial problem accessing a page, it is placed in the `parse_failed`
-            set. The `retry` parameter defines the maximum number of iterations for parsing links
-            from url's in `parse_failed`.
-        iter_delay: int | float = 30
-            Defines the delay between iterations on parsing url's from the `parse_failed` set
-        req_delay_range: typing.Iterable[float | int] = (4, 5)
-            Determines the delay before the GET-request is executed
+    async def get_all_articles(self, urls: Iterable[str], max_requests: int = 14) -> pl.DataFrame:
+        self.max_requests = Semaphore(max_requests)
+        for url in urls:
+            tree = await self.fetch_page(url)
+            if tree is None:
+                self.state.articles_failed.add(url)
 
-        Notes
-        ---
-        If setting retry does not help and the links are not all parsed,
-        it means that Yahoo! Finance is blocking your IP address,
-        change/enable your proxy.
-        """
-
-        self.iter_delay = iter_delay
-        self.req_delay_range = req_delay_range
-
-        # Convert dates to the required format
-        dates = [
-            f"https://finance.yahoo.com/sitemap/{date.strftime("%Y_%m_%d")}"
-            for date in pd.date_range(start, end, inclusive="left")
-        ]
-        size = 8190 * 2
-
-        # Opening the session
-        async with ClientSession(max_line_size=size, max_field_size=size) as session:
-            self.state.session = session
-            # Variables for tracking progress and stopping work
-            iter_counter, current_retry, was_progress = 1, 0, True
-
-            # Create TQDM widget for Jupyter Notebooks launching
-            # ========================================================================================== #
-            pbar = tqdm(
-                total=len(dates),
-                desc=f"Iteration {iter_counter}",
-                bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
-                postfix="0 h. 0 min. 0 sec."
-            )
-            start_time = time()
-
-            def update_task(_, pbar=pbar, start=start_time):
-                elapsed = time() - start
-                pbar.set_postfix_str(format_seconds(elapsed))
-                pbar.update(1)
-
-            tasks = []
-            for date in dates:
-                task = create_task(self._process_page_of_links(date))
-                task.add_done_callback(update_task)
-                tasks.append(task)
-            # ========================================================================================== #
-            # Run the first main wave to complete the `parse_failed` set
-            await gather(*tasks)
-            pbar.close()
-
-            first_wave_results = len(self.state.news_urls)
-            print(
-                f"At iteration №{iter_counter} were collected {first_wave_results} URLs\n"
-                "=================================================================="
-            )
-
-            # Run the second additional wave
-            while self.state.parse_failed:
-                await sleep(self.iter_delay)
-                iter_counter += 1
-                previous_iter_parse_failed = self.state.parse_failed.copy()
-                previous_iter_results = len(self.state.news_urls)
-                # Create TQDM widget for Jupyter Notebooks launching
-                # ========================================================================================== #
-                pbar = tqdm(
-                    total=len(self.state.parse_failed),
-                    desc=f"Iteration {iter_counter}",
-                    bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
-                    postfix="0 h. 0 min. 0 sec."
-                )
-                start_time = time()
-                tasks = []
-                for failed_link in self.state.parse_failed:
-                    task = create_task(self._process_page_of_links(failed_link))
-                    task.add_done_callback(update_task)
-                    tasks.append(task)
-                # ========================================================================================== #
-                await gather(*tasks)
-                pbar.close()
-
-                current_iter_progress = len(previous_iter_parse_failed - self.state.parse_failed)
-                current_iter_results = len(self.state.news_urls)
-
-                print(
-                    f"At iteration №{iter_counter} URLs were processed: "
-                    f"{current_iter_progress} out of {len(previous_iter_parse_failed)}\n"
-                    "Collected URLs per iteration: "
-                    f"{current_iter_results - previous_iter_results}\n"
-                    "=================================================================="
-                )
-
-                # Exit condition
-                if retry != "non_stop":
-                    if current_iter_progress == 0:
-                        if was_progress == True:
-                            current_retry, was_progress = 0, False
-                        elif current_retry == retry:
-                            break
-                        current_retry += 1
-                    else:
-                        was_progress = True
-
-        self.state.session = None
-        print(f"Total сollected URLs {len(self.state.news_urls)}")
-
-        return self.state.news_urls
+        return pl.DataFrame()
