@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from random import uniform
 from time import time
 import datetime
-from typing import Any, Collection, Dict, Iterable, List, Literal, Never, NoReturn, Set, Optional, Union
+from typing import Collection, Dict, Iterable, List, Literal, Never, NoReturn, Set, Optional, Union
 
 # External libraries
 from aiohttp import ClientSession
@@ -239,7 +239,7 @@ class YahooFinanceParser:
 
     async def get_all_news_in_range(
             self, start: str, end: str,
-            retry: Union[Literal["non_stop"], int],
+            retry: Union[Literal["non_stop"], int] = -1,
             iter_delay: Union[int, float] = 30,
             req_delay_range: Iterable[Union[float, int]] = (4, 5),
             max_requests: int = 14
@@ -254,9 +254,13 @@ class YahooFinanceParser:
         retry: typing.Literal["non_stop"] | int:
             When there is an initial problem accessing a page, it is placed in the `pages_failed`
             set. The `retry` parameter defines the maximum number of iterations for parsing links
-            from url's in `pages_failed`.
+            from url's in `pages_failed`. If the value “non-stop” is passed, the function will
+            try to parse links from the `pages_failed` set until the set remains empty (highly
+            discouraged because of the high possibility of an infinite loop). If the value -1
+            is passed, then the function will not try to parse links from the `pages_failed`
+            set at all.
         iter_delay: int | float = 30
-            Defines the delay between iterations on parsing url's from the `pages_failed` set
+            Defines the delay between iterations on parsing url's from the `pages_failed`
         req_delay_range: typing.Iterable[float | int] = (4, 5)
             Determines the delay before the GET-request is executed
         max_requests: int = 14
@@ -286,12 +290,33 @@ class YahooFinanceParser:
         return results
 
     async def get_all_news(
-            self, urls: Collection, retry: Union[Literal["non_stop"], int],
+            self, urls: Collection, retry: Union[Literal["non_stop"], int] = -1,
             iter_delay: Union[int, float] = 30,
             req_delay_range: Iterable[Union[float, int]] = (4, 5),
             max_requests: int = 14
-    ):
-        """retry -1"""
+    ) -> Set[str]:
+        """
+        Parameters
+        ---
+        urls: typing.Collection
+            Collection of urls, that need to be parsed.
+        retry: typing.Literal["non_stop"] | int:
+            When there is an initial problem accessing a page, it is placed in the `pages_failed`
+            set. The `retry` parameter defines the maximum number of iterations for parsing links
+            from url's in `pages_failed`. If the value “non-stop” is passed, the function will
+            try to parse links from the `pages_failed` set until the set remains empty (highly
+            discouraged because of the high possibility of an infinite loop). If the value -1
+            is passed, then the function will not try to parse links from the `pages_failed`
+            set at all.
+        iter_delay: int | float = 30
+            Defines the delay between iterations on parsing url's from the `pages_failed`
+        req_delay_range: typing.Iterable[float | int] = (4, 5)
+            Determines the delay before the GET-request is executed
+        max_requests: int = 14
+            Maximum number of requests that can be executed asynchronously (for parsing links
+            to news articles, a value of 14 is highly recommended, as otherwise 404 and 429 error
+            codes will become more frequent).
+            """
         self.iter_delay = iter_delay
         self.req_delay_range = req_delay_range
         self.max_requests = Semaphore(max_requests)
@@ -338,7 +363,7 @@ class YahooFinanceParser:
             if retry == -1:
                 self.state.session = None
                 return self.state.news_urls
-            
+
             # Run the second additional wave
             while self.state.pages_failed:
                 await sleep(self.iter_delay)
@@ -569,6 +594,7 @@ class YahooFinanceParser:
         return article_data
 
     async def get_all_articles(self, urls: Iterable[str], max_requests: int = 14) -> pl.DataFrame:
+        # TODO: Refine this function
         self.max_requests = Semaphore(max_requests)
         for url in urls:
             tree = await self.fetch_page(url)
