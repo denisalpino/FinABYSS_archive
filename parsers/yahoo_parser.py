@@ -3,6 +3,7 @@ from asyncio import sleep, gather, Semaphore, TimeoutError, create_task
 from dataclasses import dataclass, field
 from random import uniform
 from time import time
+import os
 import datetime
 from typing import Collection, Dict, Iterable, List, Literal, Never, NoReturn, Set, Optional, Union
 
@@ -16,13 +17,12 @@ from tqdm.notebook import tqdm
 
 
 schema = {
-    "title": pl.String,
-    "publication_datetime": pl.Datetime(time_unit="us", time_zone="UTC"),
-    "publication_type": pl.Categorical,
-    "assets": pl.List(pl.String),
-    "resource": pl.Categorical,
+    "title": pl.Utf8,
     "source": pl.Categorical,
-    "text": pl.String
+    "datetime": pl.Utf8,
+    "assets": pl.List(pl.Utf8),
+    "text": pl.Utf8,
+    "url": pl.Utf8
 }
 
 
@@ -76,18 +76,20 @@ class Selectors:
     ARTICLE_ADS: str = "div.wrapper.yf-eondll"
     ARTICLE_VISIBLE_TEXT: str = "div.atoms-wrapper"
     ARTICLE_HIDDEN_TEXT: str = "div.read-more-wrapper"
-    ARTICLE_ASSETS_WRRAPPER: str = "div.ticker-list.yf-pqeumq"
-    ARTICLE_ASSETS_LEVEL: str = "div.scroll-carousel.yf-r5lvmz"
+    ARTICLE_ASSETS_WRRAPPER: str = "div.ticker-list.yf-pqeumq > div > div > div.scroll-carousel.yf-r5lvmz"
+    ARTICLE_ASSETS_LEVEL: str = "div.carousel-top.yf-pqeumq > div"
     ARTICLE_ASSET: str = "span.symbol.yf-1fqyif7"
     ARTICLE_TITLE: str = "div.cover-title.yf-1rjrr1"
     ARTICLE_DATETIME_TAG: str = "time.byline-attr-meta-time"
     ARTICLE_DATETIME_ATTR: str = "datetime"
-    ARTICLE_SOURCE_TAG: str = "div.cover-wrap div.top-header a"
+    ARTICLE_SOURCE_TAG: str = "div.cover-wrap.yf-1rjrr1 > div.top-header.yf-1rjrr1 > a.subtle-link"
     ARTICLE_SOURCE_ATTR: str = "title"
-
+    ARTICLE_SOURCE_TAG_ADDITIONAL: str = "div.byline-attr.yf-1k5w6kz > div > div.byline-attr-author.yf-1k5w6kz"
+    ARTICLE_PREMIUM: str = "div.top-header.yf-1rjrr1 > a.topic-link"
 
 class YahooFinanceParser:
     # TODO: make article parser
+    # TODO: escape premium news
     def __init__(
             self, max_requests: int = 14, iter_delay: int = 30,
             req_delay_range: Iterable[int] | Iterable[float] = (4, 5)
@@ -500,36 +502,34 @@ class YahooFinanceParser:
 
     def __get_source(self, tree: HTMLParser) -> str:
         """Функция для извлечения заголовка новости"""
-        return (
-            tree
-            .css_first(self.selectors.ARTICLE_SOURCE_TAG)
-            .attributes
-            .get(self.selectors.ARTICLE_SOURCE_ATTR)
-        ) # type: ignore
+        if source_tag := tree.css_first(self.selectors.ARTICLE_SOURCE_TAG, default=None):
+            return source_tag.attributes.get(self.selectors.ARTICLE_SOURCE_ATTR) # type: ignore
+        return tree.css_first(self.selectors.ARTICLE_SOURCE_TAG_ADDITIONAL).text(strip=True)
 
     def __get_datetime(self, tree: HTMLParser) -> str:
         """Функция для извлечения заголовка новости. Возвращает в часовом поясе GMT-0"""
-        return (
+        dt = (
             tree
             .css_first(self.selectors.ARTICLE_DATETIME_TAG)
             .attributes
             .get(self.selectors.ARTICLE_DATETIME_ATTR)
-        ) # type: ignore
+        )
+        return dt # type: ignore
 
     def __get_title(self, tree: HTMLParser) -> str:
         """Функция для извлечения заголовка новости"""
-        return tree.css_first(self.selectors.ARTICLE_TITLE).text()
+        return tree.css_first(self.selectors.ARTICLE_TITLE).text(strip=True)
 
     def __get_assets(self, tree) -> Union[List[str], List[Never]]:
         """Функция для извлечения тикеров из-под заголовка"""
-        assets: List[str] = []
 
+        assets: Union[List[str], List[Never]] = []
         # Проверяем есть ли тикеры
         if assets_wrapper := tree.css_first(self.selectors.ARTICLE_ASSETS_WRRAPPER, default=None):
             # Итерируемся по каждому соответствующему тикеру <div>
-            for asset_div in assets_wrapper.css(self.selectors.ARTICLE_ASSETS_LEVEL):
+            for asset_node in assets_wrapper.css(self.selectors.ARTICLE_ASSETS_LEVEL):
                 assets.append(
-                    asset_div
+                    asset_node
                     .css_first(self.selectors.ARTICLE_ASSET)
                     .text(strip=True)
                 )
@@ -575,6 +575,9 @@ class YahooFinanceParser:
             "url": url
         }
 
+    def __is_premium_article(self, tree: HTMLParser) -> bool:
+        ...
+
     async def get_article(self, url: str):
         self.state.articles_in_progress.add(url)
 
@@ -586,19 +589,50 @@ class YahooFinanceParser:
             self.state.articles_failed.add(url)
             return None
 
-        article_data = self.parse_article(tree, url)
+        if self.__is_premium_article():
+            ...
+
+        try:
+            article_data = self.parse_article(tree, url)
+        except Exception as e:
+            print(url)
+            print(e)
+            self.state.pages_in_progress.discard(url)
+            self.state.pages_failed.discard(url)
+            return {
+                "title": '',
+                "source": '',
+                "datetime": '',
+                "assets": [''],
+                "text": '',
+                "url": url
+            }
 
         self.state.pages_in_progress.discard(url)
         self.state.pages_failed.discard(url)
 
         return article_data
 
-    async def get_all_articles(self, urls: Iterable[str], max_requests: int = 14) -> pl.DataFrame:
+    async def get_all_articles(self, file_path: str, urls: Iterable[str], max_requests: int = 14) -> pl.DataFrame:
         # TODO: Refine this function
         self.max_requests = Semaphore(max_requests)
-        for url in urls:
-            tree = await self.fetch_page(url)
-            if tree is None:
-                self.state.articles_failed.add(url)
 
-        return pl.DataFrame()
+        size = 8190 * 2
+
+        # Opening the session
+        async with ClientSession(max_line_size=size, max_field_size=size) as session:
+            self.state.session = session
+            news_data = await gather(*[self.get_article(url) for url in urls])
+
+        self.state.session = None
+
+        return pl.DataFrame(data=news_data, schema=schema, infer_schema_length=None) # infer_schema_length=None во избежание ошбки ComputeError: could not append value: [] of type: list[null] to the builder; make sure that all rows have the same schema or consider increasing `infer_schema_length`
+
+
+#    def write_batch(self, batch_df: pl.DataFrame, batch_index: int, output_dir: str = "batches"):
+#        if not os.path.exists(output_dir):
+#            os.makedirs(output_dir)
+#        filename = os.path.join(output_dir, f"batch_{batch_index:05d}.parquet")
+#        # Можно выбрать желаемый алгоритм сжатия, например, "zstd"
+#        batch_df.write_parquet(filename, compression="zstd")
+#        print(f"Батч {batch_index} сохранён: {batch_df.shape[0]} строк, файл: {filename}")
