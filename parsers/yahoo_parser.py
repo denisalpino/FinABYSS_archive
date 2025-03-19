@@ -1,16 +1,17 @@
 # Standart library
-from asyncio import sleep, gather, Semaphore, TimeoutError, create_task
+from ast import Tuple
+from asyncio import Task, sleep, gather, Semaphore, TimeoutError, create_task
 from dataclasses import dataclass, field
 from random import uniform
 from time import time
 import os
 import datetime
-from typing import Collection, Dict, Iterable, List, Literal, Never, NoReturn, Set, Optional, Union
+from typing import Awaitable, Collection, Dict, Iterable, List, Literal, Never, NoReturn, Sequence, Set, Optional, Union
 
 # External libraries
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientConnectorError
 from selectolax.parser import HTMLParser
-from sympy import false
+from tqdm import tqdm_notebook
 from ua_generator import generate
 
 import polars as pl
@@ -19,7 +20,7 @@ from tqdm.notebook import tqdm
 
 schema = {
     "title": pl.Utf8,
-    "source": pl.Categorical,
+    "source": pl.Utf8,
     "datetime": pl.Utf8,
     "assets": pl.List(pl.Utf8),
     "text": pl.Utf8,
@@ -49,12 +50,39 @@ def format_seconds(seconds):
     return f"{hours} h. {minutes} min. {seconds} sec."
 
 
+def wrap_with_tqdm(desc, func, tasks_args):
+    """This function is a wrapper for coroutines to launch tqdm in Jupyter Notebooks"""
+    pbar = tqdm(
+        total=len(tasks_args),
+        desc=desc,
+        bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
+        postfix="0 h. 0 min. 0 sec."
+    )
+    start_time = time()
+
+    def update_task(_, pbar=pbar, start=start_time):
+        elapsed = time() - start
+        pbar.set_postfix_str(format_seconds(elapsed))
+        pbar.update(1)
+
+    tasks: List = []
+    for item in tasks_args:
+        task = create_task(func(item)) # type: ignore
+        task.add_done_callback(update_task)
+        tasks.append(task)
+
+    return tasks, pbar
+
+
 @dataclass(slots=True)
 class ParserState:
     pages_failed: Set[str] = field(default_factory=set)
     pages_in_progress: Set[str] = field(default_factory=set)
+    # TODO: Разработать функционал кэширования для страниц
+    pages_cache: Set[str] = field(default_factory=set)
     articles_failed: Set[str] = field(default_factory=set)
     articles_in_progress: Set[str] = field(default_factory=set)
+    articles_cache: List[Dict] = field(default_factory=list)
     news_urls: Set[str] = field(default_factory=set)
     session: Optional[ClientSession] = None
 
@@ -89,8 +117,6 @@ class Selectors:
     ARTICLE_PREMIUM: str = "div.top-header.yf-1rjrr1 > a.topic-link"
 
 class YahooFinanceParser:
-    # TODO: make article parser
-    # TODO: escape premium news
     def __init__(
             self, max_requests: int = 14, iter_delay: int = 30,
             req_delay_range: Iterable[int] | Iterable[float] = (4, 5)
@@ -333,26 +359,11 @@ class YahooFinanceParser:
             iter_counter, current_retry, was_progress = 1, 0, True
 
             # Create TQDM widget for Jupyter Notebooks launching
-            # ========================================================================================== #
-            pbar = tqdm(
-                total=len(urls),
+            tasks, pbar = wrap_with_tqdm(
                 desc=f"Iteration {iter_counter}",
-                bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
-                postfix="0 h. 0 min. 0 sec."
+                func=self._process_page_of_links,
+                tasks_args=urls
             )
-            start_time = time()
-
-            def update_task(_, pbar=pbar, start=start_time):
-                elapsed = time() - start
-                pbar.set_postfix_str(format_seconds(elapsed))
-                pbar.update(1)
-
-            tasks = []
-            for url in urls:
-                task = create_task(self._process_page_of_links(url))
-                task.add_done_callback(update_task)
-                tasks.append(task)
-            # ========================================================================================== #
             # Run the first main wave to complete the `pages_failed` set
             await gather(*tasks)
             pbar.close()
@@ -373,26 +384,13 @@ class YahooFinanceParser:
                 iter_counter += 1
                 previous_iter_pages_failed = self.state.pages_failed.copy()
                 previous_iter_results = len(self.state.news_urls)
-                # Create TQDM widget for Jupyter Notebooks launching
-                # ========================================================================================== #
-                pbar = tqdm(
-                    total=len(self.state.pages_failed),
-                    desc=f"Iteration {iter_counter}",
-                    bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
-                    postfix="0 h. 0 min. 0 sec."
-                )
-                start_time = time()
-                def update_task(_, pbar=pbar, start=start_time):
-                    elapsed = time() - start
-                    pbar.set_postfix_str(format_seconds(elapsed))
-                    pbar.update(1)
 
-                tasks = []
-                for failed_link in self.state.pages_failed:
-                    task = create_task(self._process_page_of_links(failed_link))
-                    task.add_done_callback(update_task)
-                    tasks.append(task)
-                # ========================================================================================== #
+                # Create TQDM widget for Jupyter Notebooks launching
+                tasks, pbar = wrap_with_tqdm(
+                    desc=f"Iteration {iter_counter}",
+                    func=self._process_page_of_links,
+                    tasks_args=self.state.pages_failed
+                )
                 await gather(*tasks)
                 pbar.close()
 
@@ -444,7 +442,10 @@ class YahooFinanceParser:
                 - `502`
                     ...
             - Article pages:
-                - ...
+                - `404`
+                - `429`
+                "too many requests"
+                - `500`
 
         For each GET request, the function **generates a random User-Agent** and pauses
         randomly asynchronously within `self.req_delay_range` to reduce the likelihood
@@ -486,15 +487,26 @@ class YahooFinanceParser:
             try:
                 response = await self.state.session.get(url, headers=headers)
             except TimeoutError as error:
-                print(error, url)
+                print(f"Cannot fetch the page {url=} because of INTERNET CONNECTION or REGIONAL RESTRICTIONS: {error.__repr__()}")
+                return None
+            except ClientConnectorError as error:
+                print(f"Cannot fetch the page {url=} because of REDIRECTION: {error.__repr__()}")
                 return None
 
             if response.status == 200:
-                html = await response.text()
+                try:
+                    html = await response.text()
+                except RuntimeError as error:
+                    print(f"Cannot fetch a text from the page {url=} because of PROXY BLOCKING: {error.__repr__()}")
+                    return None
+                except Exception as error:
+                    print(f"Cannot fetch a text from the page {url=} UNKNOWN REASON: {error.__repr__()}")
+                    return None
+
                 tree = HTMLParser(html)
                 return tree
             # elif response.status not in (404, 429, 502, 500):
-            print(response.status, url)
+            print(f"Cannot process the page {url=} because of STATUS CODE {response.status}.")
             return None
 
     # ==================================== #
@@ -534,7 +546,7 @@ class YahooFinanceParser:
                     .css_first(self.selectors.ARTICLE_ASSET)
                     .text(strip=True)
                 )
-        return assets
+        return sorted(assets)
 
     def __prepare_text(self, tree: HTMLParser) -> NoReturn: # type: ignore
         """
@@ -548,25 +560,28 @@ class YahooFinanceParser:
                 node.decompose() # Удаляем из всего HTML-документа блоки
 
     def __parse_text(self, tree: HTMLParser) -> str:
-        # Удаляем все ненужное
+        # Delete all redundant elements from html-tree
         self.__prepare_text(tree)
 
-        # Собираем видимый текст
+        # Parse visible text (before the button "Show story")
         visible_text = "\n".join(
             [
                 paragraph.text()
                 for paragraph in tree.css_first(self.selectors.ARTICLE_VISIBLE_TEXT).iter()
             ]
         )
-        # Собираем скрытый текст
+        # Parse hidden text (after the button "Show story") if it exists
         if hidden_text := tree.css_first(self.selectors.ARTICLE_HIDDEN_TEXT, default=None):
-            # Собираем текст по абзацам, добавляя переносы строк
+            # Putting textual parts of the hidden text together using line breaks
             hidden_text = "\n".join([paragraph.text() for paragraph in hidden_text.iter()])
-            # Собираем видимую часть со скрытой и возвращаем
+            # Putting hidden and visible parts together
             return "\n".join((visible_text, hidden_text))
         return visible_text
 
     def parse_article(self, tree: HTMLParser, url: str) -> Dict[str, Union[str, Union[List[str], List[Never]]]]:
+        """
+        # TODO: Write docstring
+        """
         return {
             "title": self.__get_title(tree),
             "source": self.__get_source(tree),
@@ -580,82 +595,168 @@ class YahooFinanceParser:
         """Checks if article is available only with PERMIUM access"""
         return True if tree.css_first(self.selectors.ARTICLE_PREMIUM) else False
 
-    async def get_article(self, url: str):
-
+    async def get_article(self, url: str) -> None:
+        """
+        # TODO: Write docstring
+        """
         self.state.articles_in_progress.add(url)
 
-        # Get the HTML tree of the passed `url`
+        # Get the HTML tree of the passed URL
         tree = await self.fetch_page(url)
         if tree is None:
             # Couldn't get the tree
             self.state.articles_in_progress.discard(url)
             self.state.articles_failed.add(url)
-            print("no tree", url)
-            print("================================================")
-            return {
-                "title": '',
-                "source": '',
-                "datetime": '',
-                "assets": [''],
-                "text": '',
-                "url": url
-            }
+            return
 
+        # Check if article is available only for PREMIUM users
         if self.__is_premium_article(tree):
             self.state.articles_in_progress.discard(url)
-            print("Платная статья", url)
-            print("================================================")
-            return {
-                "title": '',
-                "source": '',
-                "datetime": '',
-                "assets": [''],
-                "text": '',
-                "url": url
-            }
+            return
 
+        # Try to parse html-tree
         try:
             article_data = self.parse_article(tree, url)
-        except Exception as e:
-            print("Ошибка", e, url)
-            print("================================================")
-            self.state.pages_in_progress.discard(url)
-            self.state.pages_failed.discard(url)
-            return {
-                "title": '',
-                "source": '',
-                "datetime": '',
-                "assets": [''],
-                "text": '',
-                "url": url
-            }
-        print("Все ок:", article_data)
-        print("================================================")
-        self.state.pages_in_progress.discard(url)
-        self.state.pages_failed.discard(url)
+        except AttributeError as error:
+            # 'NoneType' object has no attribute 'text' -- из-за банера с cookies для некоторых стран
+            # 'NoneType' object has no attribute 'text' -- из-за того, что ссылка была не на домене Yahoo! Finance
+            # 'NoneType' object has no attribute 'iter' -- из-за задержек инфраструктуры Yahoo! Finance пришел битый текст
+            print(f"AttributeError occured during PARSING TEXT on {url=}: {error.__repr__()}")
+            self.state.articles_failed.add(url)
+            self.state.articles_in_progress.discard(url)
+            return
+        except Exception as error:
+            print(f"Unknown error occured during PARSING TEXT on {url=}: {error.__repr__()}")
+            self.state.articles_failed.add(url)
+            self.state.articles_in_progress.discard(url)
+            return
 
-        return article_data
+        # Delete url from both sets
+        self.state.articles_failed.discard(url)
+        self.state.articles_in_progress.discard(url)
 
-    async def get_all_articles(self, file_path: str, urls: Iterable[str], max_requests: int = 14) -> pl.DataFrame:
-        # TODO: Refine this function
+        # Add article in cache
+        self.state.articles_cache.append(article_data)
+
+    async def get_all_articles(
+            self, urls: Sequence[str], directory: Optional[str] = None,
+            max_requests: int = 14, chunk_size: int = 1000
+    ) -> pl.DataFrame:
+        """
+        # TODO: Write docstring
+        """
+        # TODO: Как выгружать при ошибках нераспаршенные статьи?
         self.max_requests = Semaphore(max_requests)
+        size = 8190 * 20
 
-        size = 8190 * 2
+        # Opening asyncronious session
+        session = ClientSession(max_line_size=size, max_field_size=size)
+        self.state.session = session
 
-        # Opening the session
-        async with ClientSession(max_line_size=size, max_field_size=size) as session:
-            self.state.session = session
-            news_data = await gather(*[self.get_article(url) for url in urls])
+        if directory:
+            chunk_index = 0
+            chunk_dir = f"{directory}/chunks/"
+            target_file = f"{directory}/articles.parquet"
+            chunk_file_paths = []
 
+            if not os.path.isdir(chunk_dir):
+                os.mkdir(chunk_dir)
+
+            try:
+                for start in range(0, len(urls), chunk_size):
+                    # If something will go wrong during concatenation, parsed articles will save in cache
+                    self.state.articles_cache = list()
+
+                    chunk = urls[start:start+chunk_size]
+
+                    # Add tqdm widget
+                    tasks, pbar = wrap_with_tqdm(
+                        f"Processing chunk {chunk_index}",
+                        func=self.get_article,
+                        tasks_args=chunk
+                    )
+                    # Run article parsing on current chunk
+                    await gather(*tasks)
+                    pbar.close()
+
+                    chunk_df = pl.DataFrame(
+                        data=self.state.articles_cache,
+                        schema=schema,
+                        infer_schema_length=None
+                    )
+                    # Save DataFrame with chunk to Parquet file
+                    chunk_file_path = chunk_dir + "_".join(["chunk", str(chunk_index)]) + ".parquet"
+                    chunk_df.write_parquet(file=chunk_file_path)
+
+                    chunk_file_paths.append(chunk_file_path)
+                    print(
+                        "==============================================================================\n"
+                        f"Chunk {chunk_index} saved successfully: {chunk_df.shape[0]} rows.\n"
+                        f"File: {chunk_file_path}.\n"
+                        f"Size (estimated): {chunk_df.estimated_size("mb"):.2f} MB.\n"
+                        f"Size (real): {os.path.getsize(chunk_file_path) / (1024 * 1024):.2f} MB.\n"
+                        "=============================================================================="
+                    )
+                    chunk_index += 1
+            except Exception as error:
+                raise error
+            finally:
+                # Grab all temporary chunked files, that was written during current function call
+                dfs = [
+                    pl.read_parquet(chunk_file_path)
+                    for chunk_file_path in chunk_file_paths
+                ]
+
+                # Grab all cached data if it exists
+                if self.state.articles_cache:
+                    cache = pl.DataFrame(
+                        data=self.state.articles_cache,
+                        schema=schema,
+                        infer_schema_length=None
+                    )
+                    dfs.append(cache)
+
+                # Grab all previously written data if it exists
+                if os.path.isfile(target_file):
+                    dfs.append(pl.read_parquet(target_file))
+
+                # Merge and write all collected data
+                merged_df = pl.concat(dfs)
+                merged_df.write_parquet(target_file)
+
+                # Delete all temporary files
+                for chunk_file_path in chunk_file_paths:
+                    os.remove(chunk_file_path)
+                os.rmdir(chunk_dir)
+
+                # Clean cache
+                self.state.articles_cache = list()
+
+                await session.close()
+                self.state.session = None
+
+                return merged_df
+
+        tasks, pbar = wrap_with_tqdm(
+            "Processing articles",
+            func=self.get_article,
+            tasks_args=urls
+        )
+        # Run all article parsing in once
+        await gather(*tasks)
+        pbar.close()
+
+        df = pl.DataFrame(data=self.state.articles_cache, schema=schema, infer_schema_length=None)
+
+        print(
+            "==============================================================================\n"
+            f"URLs parsed successfully: {df.shape[0]} rows.\n"
+            f"Size (estimated): {df.estimated_size("mb"):.2f} MB.\n"
+            "=============================================================================="
+        )
+
+        # Close asyncronious session
+        await session.close()
         self.state.session = None
 
-        return pl.DataFrame(data=news_data, schema=schema, infer_schema_length=None) # infer_schema_length=None во избежание ошбки ComputeError: could not append value: [] of type: list[null] to the builder; make sure that all rows have the same schema or consider increasing `infer_schema_length`
-
-
-#    def write_batch(self, batch_df: pl.DataFrame, batch_index: int, output_dir: str = "batches"):
-#        if not os.path.exists(output_dir):
-#            os.makedirs(output_dir)
-#        filename = os.path.join(output_dir, f"batch_{batch_index:05d}.parquet")
-#        # Можно выбрать желаемый алгоритм сжатия, например, "zstd"
-#        batch_df.write_parquet(filename, compression="zstd")
-#        print(f"Батч {batch_index} сохранён: {batch_df.shape[0]} строк, файл: {filename}")
+        return df
