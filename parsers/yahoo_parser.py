@@ -671,7 +671,7 @@ class YahooFinanceParser:
 
                     # Add tqdm widget
                     tasks, pbar = wrap_with_tqdm(
-                        f"Processing chunk {chunk_index}",
+                        f"Processing chunk №{chunk_index}",
                         func=self.get_article,
                         tasks_args=chunk
                     )
@@ -698,6 +698,8 @@ class YahooFinanceParser:
                         "=============================================================================="
                     )
                     chunk_index += 1
+                # Clean cache
+                self.state.articles_cache = list()
             except Exception as error:
                 raise error
             finally:
@@ -728,9 +730,6 @@ class YahooFinanceParser:
                 for chunk_file_path in chunk_file_paths:
                     os.remove(chunk_file_path)
                 os.rmdir(chunk_dir)
-
-                # Clean cache
-                self.state.articles_cache = list()
 
                 await session.close()
                 self.state.session = None
