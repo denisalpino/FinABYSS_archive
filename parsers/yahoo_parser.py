@@ -1,17 +1,15 @@
 # Standart library
-from ast import Tuple
-from asyncio import Task, sleep, gather, Semaphore, TimeoutError, create_task
+from asyncio import sleep, gather, Semaphore, TimeoutError, create_task
 from dataclasses import dataclass, field
 from random import uniform
 from time import time
 import os
 import datetime
-from typing import Awaitable, Collection, Dict, Iterable, List, Literal, Never, NoReturn, Sequence, Set, Optional, Union
+from typing import Collection, Dict, Iterable, List, Literal, Never, NoReturn, Sequence, Set, Optional, Union
 
 # External libraries
 from aiohttp import ClientSession, ClientConnectorError
 from selectolax.parser import HTMLParser
-from tqdm import tqdm_notebook
 from ua_generator import generate
 
 import polars as pl
@@ -50,13 +48,14 @@ def format_seconds(seconds):
     return f"{hours} h. {minutes} min. {seconds} sec."
 
 
-def wrap_with_tqdm(desc, func, tasks_args):
+def wrap_with_tqdm(desc: str, func, tasks_args, hide: bool):
     """This function is a wrapper for coroutines to launch tqdm in Jupyter Notebooks"""
     pbar = tqdm(
         total=len(tasks_args),
         desc=desc,
         bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
-        postfix="0 h. 0 min. 0 sec."
+        postfix="0 h. 0 min. 0 sec.",
+        leave=not hide # To hide widget for chunk after it's compited
     )
     start_time = time()
 
@@ -362,7 +361,8 @@ class YahooFinanceParser:
             tasks, pbar = wrap_with_tqdm(
                 desc=f"Iteration {iter_counter}",
                 func=self._process_page_of_links,
-                tasks_args=urls
+                tasks_args=urls,
+                hide=False
             )
             # Run the first main wave to complete the `pages_failed` set
             await gather(*tasks)
@@ -389,7 +389,8 @@ class YahooFinanceParser:
                 tasks, pbar = wrap_with_tqdm(
                     desc=f"Iteration {iter_counter}",
                     func=self._process_page_of_links,
-                    tasks_args=self.state.pages_failed
+                    tasks_args=self.state.pages_failed,
+                    hide=False
                 )
                 await gather(*tasks)
                 pbar.close()
@@ -645,7 +646,7 @@ class YahooFinanceParser:
         """
         # TODO: Write docstring
         """
-        # TODO: Как выгружать при ошибках нераспаршенные статьи?
+        # TODO: Возвращать то, что спаршено именно сейчас, а не вместее с файлом articles.parquet
         self.max_requests = Semaphore(max_requests)
         size = 8190 * 20
 
@@ -663,7 +664,7 @@ class YahooFinanceParser:
                 os.mkdir(chunk_dir)
 
             try:
-                for start in range(0, len(urls), chunk_size):
+                for start in tqdm(range(0, len(urls), chunk_size), desc="Processing articles"):
                     # If something will go wrong during concatenation, parsed articles will save in cache
                     self.state.articles_cache = list()
 
@@ -673,7 +674,8 @@ class YahooFinanceParser:
                     tasks, pbar = wrap_with_tqdm(
                         f"Processing chunk №{chunk_index}",
                         func=self.get_article,
-                        tasks_args=chunk
+                        tasks_args=chunk,
+                        hide=True
                     )
                     # Run article parsing on current chunk
                     await gather(*tasks)
@@ -726,6 +728,15 @@ class YahooFinanceParser:
                 merged_df = pl.concat(dfs)
                 merged_df.write_parquet(target_file)
 
+                print(
+                    "==============================================================================\n"
+                    f"Articles were saved successfully: {merged_df.shape[0]} rows.\n"
+                    f"File: {target_file}.\n"
+                    f"Size (estimated): {merged_df.estimated_size("mb"):.2f} MB.\n"
+                    f"Size (real): {os.path.getsize(target_file) / (1024 * 1024):.2f} MB.\n"
+                    "=============================================================================="
+                )
+
                 # Delete all temporary files
                 for chunk_file_path in chunk_file_paths:
                     os.remove(chunk_file_path)
@@ -739,7 +750,8 @@ class YahooFinanceParser:
         tasks, pbar = wrap_with_tqdm(
             "Processing articles",
             func=self.get_article,
-            tasks_args=urls
+            tasks_args=urls,
+            hide=True
         )
         # Run all article parsing in once
         await gather(*tasks)
