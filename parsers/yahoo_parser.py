@@ -1,11 +1,10 @@
 # Standart library
-from asyncio import sleep, gather, Semaphore, TimeoutError, create_task
+from asyncio import sleep, gather, Semaphore, TimeoutError
 from dataclasses import dataclass, field
 from random import uniform
-from time import time
 import os
 import datetime
-from typing import Collection, Dict, Iterable, List, Literal, Never, NoReturn, Sequence, Set, Optional, Union
+from typing import Collection, Sequence, Iterable, Dict, List, Set, Literal, Never, NoReturn, Optional, Union
 
 # External libraries
 from aiohttp import ClientSession, ClientConnectorError
@@ -14,6 +13,8 @@ from ua_generator import generate
 
 import polars as pl
 from tqdm.notebook import tqdm
+
+from utils.custom_tqdm import wrap_with_tqdm
 
 
 schema = {
@@ -38,39 +39,6 @@ HEADERS = {
     "Sec-Fetch-Site": "same-origin",
     "Upgrade-Insecure-Requests": "1"
 }
-
-
-def format_seconds(seconds):
-    """Convert seconds to hours/minutes/seconds for TQDM widget"""
-    hours = int(seconds // 3600)
-    minutes = int((seconds % 3600) // 60)
-    seconds = int(seconds % 60)
-    return f"{hours} h. {minutes} min. {seconds} sec."
-
-
-def wrap_with_tqdm(desc: str, func, tasks_args, hide: bool):
-    """This function is a wrapper for coroutines to launch tqdm in Jupyter Notebooks"""
-    pbar = tqdm(
-        total=len(tasks_args),
-        desc=desc,
-        bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
-        postfix="0 h. 0 min. 0 sec.",
-        leave=not hide # To hide widget for chunk after it's compited
-    )
-    start_time = time()
-
-    def update_task(_, pbar=pbar, start=start_time):
-        elapsed = time() - start
-        pbar.set_postfix_str(format_seconds(elapsed))
-        pbar.update(1)
-
-    tasks: List = []
-    for item in tasks_args:
-        task = create_task(func(item)) # type: ignore
-        task.add_done_callback(update_task)
-        tasks.append(task)
-
-    return tasks, pbar
 
 
 @dataclass(slots=True)
