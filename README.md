@@ -10,16 +10,4 @@
 - [alpha_vantage](https://github.com/RomelTorres/alpha_vantage);
 - [PyTorch](https://github.com/pytorch/pytorch);
 - [TensorBoard](https://pytorch.org/tutorials/recipes/recipes/tensorboard_with_pytorch.html) (доки по работе с PyTorch)
-- [FireDucks](https://fireducks-dev.github.io/docs/get-started/) -- для ускорения работы с данными (такой же API, как и у `pandas`)
-
-Последовательность установок:
-1. ```pip install bertopic```
-2. ```pip install transformers```
-3. ```pip install torch torchvision``` # для использования TensorBoard
-4. ```pip install tensorboard```
-5. ```pip install alpha_vantage``` # для OHLCV
-6. ```pip install -U ipywidgets widgetsnbextension``` # для работы TQDM в Jupyter Notebooks
-7. ```pip install polars``` # для работы с даннными (вместо pandas)
-8. ```pip install aiohttp``` # для скрапинга
-9. ```pip install selectolax``` # для парсинга
-10. ```pip install tqdm``` # для отображения прогресса
+- [Polars](https://docs.pola.rs/) -- для ускорения работы с данными (похожий API на `pandas`)
