@@ -1,5 +1,5 @@
 # Standart library
-from asyncio import sleep, gather, Semaphore, TimeoutError
+from asyncio import sleep, gather, Semaphore, TimeoutError, create_task
 from dataclasses import dataclass, field
 from random import uniform
 import os
@@ -82,6 +82,7 @@ class Selectors:
     ARTICLE_SOURCE_ATTR: str = "title"
     ARTICLE_SOURCE_TAG_ADDITIONAL: str = "div.byline-attr.yf-1k5w6kz > div > div.byline-attr-author.yf-1k5w6kz"
     ARTICLE_PREMIUM: str = "div.top-header.yf-1rjrr1 > a.topic-link"
+
 
 class YahooFinanceParser:
     def __init__(
@@ -324,12 +325,12 @@ class YahooFinanceParser:
             self.state.session = session
             # Variables for tracking progress and stopping work
             iter_counter, current_retry, was_progress = 1, 0, True
+            tasks = [create_task(self._process_page_of_links(url)) for url in urls]
 
             # Create TQDM widget for Jupyter Notebooks launching
-            tasks, pbar = wrap_with_tqdm(
+            pbar = wrap_with_tqdm(
                 desc=f"Iteration {iter_counter}",
-                func=self._process_page_of_links,
-                tasks_args=urls,
+                tasks=tasks,
                 hide=False
             )
             # Run the first main wave to complete the `pages_failed` set
@@ -353,11 +354,12 @@ class YahooFinanceParser:
                 previous_iter_pages_failed = self.state.pages_failed.copy()
                 previous_iter_results = len(self.state.news_urls)
 
+                tasks = [create_task(self._process_page_of_links(url)) for url in self.state.pages_failed]
+
                 # Create TQDM widget for Jupyter Notebooks launching
-                tasks, pbar = wrap_with_tqdm(
+                pbar = wrap_with_tqdm(
                     desc=f"Iteration {iter_counter}",
-                    func=self._process_page_of_links,
-                    tasks_args=self.state.pages_failed,
+                    tasks=tasks,
                     hide=False
                 )
                 await gather(*tasks)
@@ -391,8 +393,11 @@ class YahooFinanceParser:
         return self.state.news_urls
 
     # ==================================== #
-    #           GENERAL FUNCTION           #
+    #           GENERAL FUNCTIONS          #
     # ==================================== #
+
+    def add_proxy(self, host: str, username: str, password: str) -> NoReturn:
+        ...
 
     async def fetch_page(self, url: str) -> Optional[HTMLParser]:
         """
@@ -609,7 +614,9 @@ class YahooFinanceParser:
 
     async def get_all_articles(
             self, urls: Sequence[str], directory: Optional[str] = None,
-            max_requests: int = 14, chunk_size: int = 1000
+            max_requests: int = 14, chunk_size: int = 1000,
+            proxies: ... = ..., logging: bool = False,
+            chunk_progress: bool = False
     ) -> pl.DataFrame:
         """
         # TODO: Write docstring
@@ -637,17 +644,21 @@ class YahooFinanceParser:
                     self.state.articles_cache = list()
 
                     chunk = urls[start:start+chunk_size]
+                    tasks = [create_task(self.get_article(url)) for url in chunk]
 
-                    # Add tqdm widget
-                    tasks, pbar = wrap_with_tqdm(
-                        f"Processing chunk №{chunk_index}",
-                        func=self.get_article,
-                        tasks_args=chunk,
-                        hide=True
-                    )
-                    # Run article parsing on current chunk
-                    await gather(*tasks)
-                    pbar.close()
+                    # Create TQDM widget for Jupyter Notebooks launching
+                    if chunk_progress:
+                        tasks, pbar = wrap_with_tqdm(
+                            f"Processing chunk №{chunk_index}",
+                            tasks=tasks,
+                            hide=True
+                        )
+                        # Run article parsing on current chunk
+                        await gather(*tasks)
+                        pbar.close()
+                    else:
+                        # Run article parsing on current chunk
+                        await gather(*tasks)
 
                     chunk_df = pl.DataFrame(
                         data=self.state.articles_cache,
@@ -659,14 +670,16 @@ class YahooFinanceParser:
                     chunk_df.write_parquet(file=chunk_file_path)
 
                     chunk_file_paths.append(chunk_file_path)
-                    print(
-                        "==============================================================================\n"
-                        f"Chunk {chunk_index} saved successfully: {chunk_df.shape[0]} rows.\n"
-                        f"File: {chunk_file_path}.\n"
-                        f"Size (estimated): {chunk_df.estimated_size("mb"):.2f} MB.\n"
-                        f"Size (real): {os.path.getsize(chunk_file_path) / (1024 * 1024):.2f} MB.\n"
-                        "=============================================================================="
-                    )
+
+                    if logging:
+                        print(
+                            "==============================================================================\n"
+                            f"Chunk {chunk_index} saved successfully: {chunk_df.shape[0]} rows.\n"
+                            f"File: {chunk_file_path}.\n"
+                            f"Size (estimated): {chunk_df.estimated_size("mb"):.2f} MB.\n"
+                            f"Size (real): {os.path.getsize(chunk_file_path) / (1024 * 1024):.2f} MB.\n"
+                            "=============================================================================="
+                        )
                     chunk_index += 1
                 # Clean cache
                 self.state.articles_cache = list()
@@ -696,14 +709,15 @@ class YahooFinanceParser:
                 merged_df = pl.concat(dfs)
                 merged_df.write_parquet(target_file)
 
-                print(
-                    "==============================================================================\n"
-                    f"Articles were saved successfully: {merged_df.shape[0]} rows.\n"
-                    f"File: {target_file}.\n"
-                    f"Size (estimated): {merged_df.estimated_size("mb"):.2f} MB.\n"
-                    f"Size (real): {os.path.getsize(target_file) / (1024 * 1024):.2f} MB.\n"
-                    "=============================================================================="
-                )
+                if logging:
+                    print(
+                        "==============================================================================\n"
+                        f"Articles were saved successfully: {merged_df.shape[0]} rows.\n"
+                        f"File: {target_file}.\n"
+                        f"Size (estimated): {merged_df.estimated_size("mb"):.2f} MB.\n"
+                        f"Size (real): {os.path.getsize(target_file) / (1024 * 1024):.2f} MB.\n"
+                        "=============================================================================="
+                    )
 
                 # Delete all temporary files
                 for chunk_file_path in chunk_file_paths:
@@ -715,11 +729,13 @@ class YahooFinanceParser:
 
                 return merged_df
 
-        tasks, pbar = wrap_with_tqdm(
+        tasks = [create_task(self.get_article(url)) for url in urls]
+
+        # Create TQDM widget for Jupyter Notebooks launching
+        pbar = wrap_with_tqdm(
             "Processing articles",
-            func=self.get_article,
-            tasks_args=urls,
-            hide=True
+            tasks=tasks,
+            hide=False
         )
         # Run all article parsing in once
         await gather(*tasks)
@@ -727,12 +743,13 @@ class YahooFinanceParser:
 
         df = pl.DataFrame(data=self.state.articles_cache, schema=schema, infer_schema_length=None)
 
-        print(
-            "==============================================================================\n"
-            f"URLs parsed successfully: {df.shape[0]} rows.\n"
-            f"Size (estimated): {df.estimated_size("mb"):.2f} MB.\n"
-            "=============================================================================="
-        )
+        if logging:
+            print(
+                "==============================================================================\n"
+                f"URLs parsed successfully: {df.shape[0]} rows.\n"
+                f"Size (estimated): {df.estimated_size("mb"):.2f} MB.\n"
+                "=============================================================================="
+            )
 
         # Close asyncronious session
         await session.close()
