@@ -1,6 +1,7 @@
+from asyncio import create_task
 from time import time
-from tqdm.notebook import tqdm
 from typing import Any, List
+from tqdm.notebook import tqdm
 
 
 def format_seconds(seconds):
@@ -18,7 +19,7 @@ def wrap_with_tqdm(desc: str, func: Any, tasks_args: Any, hide: bool):
         desc=desc,
         bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
         postfix="0 h. 0 min. 0 sec.",
-        leave=not hide # To hide widget for chunk after it's compited
+        leave=not hide  # To hide widget for chunk after it's compited
     )
     start_time = time()
 
@@ -29,7 +30,7 @@ def wrap_with_tqdm(desc: str, func: Any, tasks_args: Any, hide: bool):
 
     tasks: List = []
     for item in tasks_args:
-        task = create_task(func(item)) # type: ignore
+        task = create_task(func(item))  # type: ignore
         task.add_done_callback(update_task)
         tasks.append(task)
 
