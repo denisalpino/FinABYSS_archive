@@ -12,10 +12,10 @@ def format_seconds(seconds):
     return f"{hours} h. {minutes} min. {seconds} sec."
 
 
-def wrap_with_tqdm(desc: str, func: Any, tasks_args: Any, hide: bool):
+def wrap_with_tqdm(desc: str, func: Any, func_args: Any, hide: bool):
     """This function is a wrapper for coroutines to launch tqdm in Jupyter Notebooks"""
     pbar = tqdm(
-        total=len(tasks_args),
+        total=len(func_args),
         desc=desc,
         bar_format="{desc}: {percentage:.0f}%|{bar}| {n_fmt}/{total_fmt} [It's been: {postfix}]",
         postfix="0 h. 0 min. 0 sec.",
@@ -29,7 +29,7 @@ def wrap_with_tqdm(desc: str, func: Any, tasks_args: Any, hide: bool):
         pbar.update(1)
 
     tasks: List = []
-    for item in tasks_args:
+    for item in func_args:
         task = create_task(func(item))  # type: ignore
         task.add_done_callback(update_task)
         tasks.append(task)
