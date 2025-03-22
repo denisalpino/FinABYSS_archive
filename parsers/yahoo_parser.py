@@ -1,16 +1,33 @@
 # Standart library
-from asyncio import sleep, gather, Semaphore, TimeoutError, create_task
-from dataclasses import dataclass, field
-from random import uniform
 import os
 import datetime
-from typing import Collection, Sequence, Iterable, Dict, List, Set, Literal, Never, NoReturn, Optional, Union
+from random import uniform
+from dataclasses import dataclass, field
+from asyncio import (
+    sleep,
+    gather,
+    create_task,
+    Semaphore,
+    TimeoutError
+)
+from typing import (
+    Collection,
+    Sequence,
+    Iterable,
+    Dict,
+    List,
+    Set,
+    Literal,
+    Never,
+    NoReturn,
+    Optional,
+    Union
+)
 
 # External libraries
 from aiohttp import ClientSession, ClientConnectorError
 from selectolax.parser import HTMLParser
 from ua_generator import generate
-
 import polars as pl
 from tqdm.notebook import tqdm
 
@@ -624,7 +641,7 @@ class YahooFinanceParser:
         """
         # TODO: Write docstring
         """
-        # TODO: Возвращать то, что спаршено именно сейчас, а не вместее с файлом articles.parquet
+        # TODO: Возвращать то, что спаршено именно сейчас, а не вместе с исходным содержимым целевого файла
         self.max_requests = Semaphore(max_requests)
         size = 8190 * 20
 
