@@ -290,7 +290,8 @@ class YahooFinanceParser:
             self, urls: Collection, retry: Union[Literal["non_stop"], int] = -1,
             iter_delay: Union[int, float] = 30,
             req_delay_range: Iterable[Union[float, int]] = (4, 5),
-            max_requests: int = 14
+            max_requests: int = 14,
+            logging: bool = True
     ) -> Set[str]:
         """
         Parameters
@@ -338,10 +339,11 @@ class YahooFinanceParser:
             pbar.close()
 
             first_wave_results = len(self.state.news_urls)
-            print(
-                f"At iteration №{iter_counter} were collected {first_wave_results} URLs\n"
-                "=================================================================="
-            )
+            if logging:
+                print(
+                    f"At iteration №{iter_counter} were collected {first_wave_results} URLs\n"
+                    "=================================================================="
+                )
 
             if retry == -1:
                 self.state.session = None
@@ -368,13 +370,14 @@ class YahooFinanceParser:
                 current_iter_progress = len(previous_iter_pages_failed - self.state.pages_failed)
                 current_iter_results = len(self.state.news_urls)
 
-                print(
-                    f"At iteration №{iter_counter} URLs were processed: "
-                    f"{current_iter_progress} out of {len(previous_iter_pages_failed)}\n"
-                    "Collected URLs per iteration: "
-                    f"{current_iter_results - previous_iter_results}\n"
-                    "=================================================================="
-                )
+                if logging:
+                    print(
+                        f"At iteration №{iter_counter} URLs were processed: "
+                        f"{current_iter_progress} out of {len(previous_iter_pages_failed)}\n"
+                        "Collected URLs per iteration: "
+                        f"{current_iter_results - previous_iter_results}\n"
+                        "=================================================================="
+                    )
 
                 # Exit condition
                 if retry != "non_stop":
@@ -613,7 +616,7 @@ class YahooFinanceParser:
         self.state.articles_cache.append(article_data)
 
     async def get_all_articles(
-            self, urls: Sequence[str], directory: Optional[str] = None,
+            self, urls: Sequence[str], file_path: Optional[str] = None,
             max_requests: int = 14, chunk_size: int = 1000,
             proxies: ... = ..., logging: bool = False,
             chunk_progress: bool = False
@@ -629,10 +632,9 @@ class YahooFinanceParser:
         session = ClientSession(max_line_size=size, max_field_size=size)
         self.state.session = session
 
-        if directory:
+        if file_path:
             chunk_index = 0
-            chunk_dir = f"{directory}/chunks/"
-            target_file = f"{directory}/articles.parquet"
+            chunk_dir = f"{"/".join(file_path.split("/")[:-1])}/chunks/".lstrip("/")
             chunk_file_paths = []
 
             if not os.path.isdir(chunk_dir):
@@ -702,20 +704,20 @@ class YahooFinanceParser:
                     dfs.append(cache)
 
                 # Grab all previously written data if it exists
-                if os.path.isfile(target_file):
-                    dfs.append(pl.read_parquet(target_file))
+                if os.path.isfile(file_path):
+                    dfs.append(pl.read_parquet(file_path))
 
                 # Merge and write all collected data
                 merged_df = pl.concat(dfs)
-                merged_df.write_parquet(target_file)
+                merged_df.write_parquet(file_path)
 
                 if logging:
                     print(
                         "==============================================================================\n"
                         f"Articles were saved successfully: {merged_df.shape[0]} rows.\n"
-                        f"File: {target_file}.\n"
+                        f"File: {file_path}.\n"
                         f"Size (estimated): {merged_df.estimated_size("mb"):.2f} MB.\n"
-                        f"Size (real): {os.path.getsize(target_file) / (1024 * 1024):.2f} MB.\n"
+                        f"Size (real): {os.path.getsize(file_path) / (1024 * 1024):.2f} MB.\n"
                         "=============================================================================="
                     )
 
