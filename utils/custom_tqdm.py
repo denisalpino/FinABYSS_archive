@@ -1,6 +1,6 @@
 from asyncio import Task
 from time import time
-from typing import Any, List
+from typing import List
 from tqdm.notebook import tqdm
 
 
