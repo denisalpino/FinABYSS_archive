@@ -4,6 +4,7 @@ import datetime
 from random import uniform
 from dataclasses import dataclass, field
 from asyncio import (
+    Task,
     sleep,
     gather,
     create_task,
@@ -11,6 +12,7 @@ from asyncio import (
     TimeoutError
 )
 from typing import (
+    Any,
     Collection,
     Sequence,
     Iterable,
@@ -25,13 +27,14 @@ from typing import (
 )
 
 # External libraries
-from aiohttp import ClientSession, ClientConnectorError
+from aiohttp import ClientSession, BasicAuth, ClientConnectorError
 from selectolax.parser import HTMLParser
 from ua_generator import generate
 import polars as pl
 from tqdm.notebook import tqdm
 
 from utils.custom_tqdm import wrap_with_tqdm
+from utils.proxy_manager import ProxyManager, ProxyDense
 
 
 schema = {
@@ -62,7 +65,7 @@ HEADERS = {
 class ParserState:
     pages_failed: Set[str] = field(default_factory=set)
     pages_in_progress: Set[str] = field(default_factory=set)
-    # TODO: Разработать функционал кэширования для страниц
+    # TODO: Разработать функционал кэширования для страниц (по факту переименовать все из news_urls)
     pages_cache: Set[str] = field(default_factory=set)
     articles_failed: Set[str] = field(default_factory=set)
     articles_in_progress: Set[str] = field(default_factory=set)
@@ -101,16 +104,121 @@ class Selectors:
     ARTICLE_PREMIUM: str = "div.top-header.yf-1rjrr1 > a.topic-link"
 
 
+async def fetch_page(url: str, session: ClientSession, semaphore: Semaphore, delay: Union[int, float]) -> Optional[HTMLParser]:
+    """
+    Description
+    ---
+    The function tries to make a GET request on `url` and get the HTML tree of the page.
+
+    Observed errors:
+        - Page with links to the day's news:
+            - `404`
+            "Will be right back...
+            Thank you for your patience.
+            Our engineers are working quickly to resolve the issue."
+            - `429`
+            "too many requests"
+            - `502`
+                ...
+        - Article pages:
+            - `404`
+            - `429`
+            "too many requests"
+            - `500`
+
+    For each GET request, the function **generates a random User-Agent** and pauses
+    randomly asynchronously within `self.req_delay_range` to reduce the likelihood
+    of exceeding an **unknown request rate limit** from a single IP address.
+
+    All errors occurring within this function, except for session errors,
+    are output as text to the terminal
+
+    Parameters
+    ---
+    url: str
+        any link to Yahoo! Finance (for example "https://finance.yahoo.com/sitemap/YYYY_MM_DD"
+        or "https://finance.yahoo.com/news/ARTICLE-ID.html")
+
+    Raises
+    ---
+    Exception("There is no opened session.")
+        if for some reasons the asynchronous client session was not opened
+    asyncio.TimeoutError
+        the reasons can be varied, but they are almost always related
+        to your or proxy server slow internet connection
+    """
+
+    headers = {
+        **HEADERS,
+        "User-Agent": generate(
+            device='desktop',
+            browser='chrome',
+            platform=['windows', 'macos']
+        ).text
+    }
+
+    async with semaphore:
+        await sleep(delay)
+        try:
+            response = await session.get(url, headers=headers)
+        except TimeoutError as error:
+            print(f"Cannot fetch the page {url=} because of INTERNET CONNECTION or REGIONAL RESTRICTIONS: {error.__repr__()}")
+            return None
+        except ClientConnectorError as error:
+            print(f"Cannot fetch the page {url=} because of REDIRECTION: {error.__repr__()}")
+            return None
+
+        if response.status == 200:
+            try:
+                html = await response.text()
+            except RuntimeError as error:
+                print(f"Cannot fetch a text from the page {url=} because of PROXY BLOCKING: {error.__repr__()}")
+                return None
+            except Exception as error:
+                print(f"Cannot fetch a text from the page {url=} UNKNOWN REASON: {error.__repr__()}")
+                return None
+
+            tree = HTMLParser(html)
+            return tree
+        # elif response.status not in (404, 429, 502, 500):
+        print(f"Cannot process the page {url=} because of STATUS CODE {response.status}.")
+        return None
+
+
 class YahooFinanceParser:
+
+    # ==================================== #
+    #           GENERAL FUNCTIONS          #
+    # ==================================== #
+
     def __init__(
             self, max_requests: int = 14, iter_delay: int = 30,
             req_delay_range: Iterable[int] | Iterable[float] = (4, 5)
     ) -> None:
         self.state = ParserState()
         self.selectors = Selectors()
+        self.proxy_manager = ProxyManager()
         self.max_requests = Semaphore(max_requests)
         self.iter_delay = iter_delay
         self.req_delay_range = req_delay_range
+
+    def add_proxy(
+            self,
+            url: Optional[str] = None,
+            proxy: Optional[ProxyDense] = None,
+            protocol: str = "",
+            login: str = "", password: str = "",
+            ip_adress: str = "", port: str = ""
+    ) -> None:
+        self.proxy_manager.add_proxy(url, proxy, protocol, login, password, ip_adress, port)
+
+    async def do_with_proxy(self, tasks: List[Task], proxy: ProxyDense) -> List[Any]:
+        # TODO: Решить куда и как сохранять сессии
+        size = 8190 * 20
+
+        # Opening asyncronious session
+        async with ClientSession(max_line_size=size, max_field_size=size, proxy=str(proxy)):
+            return await gather(*tasks)
 
     # ==================================== #
     #          SITEMAP FUNCTIONS           #
@@ -198,7 +306,7 @@ class YahooFinanceParser:
             return next_button.attributes.get('href') if next_button else None
         return None
 
-    async def _process_page_of_links(self, url: str) -> None:
+    async def _process_page_of_links(self, url: str, session: ClientSession, max_requests: Semaphore) -> None:
         """
         Функция
 
@@ -221,7 +329,10 @@ class YahooFinanceParser:
         self.state.pages_in_progress.add(url)
 
         # Get the HTML tree of the passed `url`
-        tree = await self.fetch_page(url)
+        tree = await fetch_page(
+            url, session, max_requests,
+            uniform(*self.req_delay_range)
+        )
         if tree is None:
             # Couldn't get the tree
             self.state.pages_in_progress.discard(url)
@@ -243,7 +354,7 @@ class YahooFinanceParser:
 
         # Если кнопок не будет, то страница отлетит сразу после `_is_end_page()` выше
         if next_url := self.__get_next_page(tree):
-            await self._process_page_of_links(next_url)
+            await self._process_page_of_links(next_url, session, self.max_requests)
         else:
             raise Exception(f"There is no button level or 'Next' button on this page: {url}")
 
@@ -340,10 +451,9 @@ class YahooFinanceParser:
 
         # Opening the session
         async with ClientSession(max_line_size=size, max_field_size=size) as session:
-            self.state.session = session
             # Variables for tracking progress and stopping work
             iter_counter, current_retry, was_progress = 1, 0, True
-            tasks = [create_task(self._process_page_of_links(url)) for url in urls]
+            tasks = [create_task(self._process_page_of_links(url, session, self.max_requests)) for url in urls]
 
             # Create TQDM widget for Jupyter Notebooks launching
             pbar = wrap_with_tqdm(
@@ -363,7 +473,6 @@ class YahooFinanceParser:
                 )
 
             if retry == -1:
-                self.state.session = None
                 return self.state.news_urls
 
             # Run the second additional wave
@@ -373,7 +482,7 @@ class YahooFinanceParser:
                 previous_iter_pages_failed = self.state.pages_failed.copy()
                 previous_iter_results = len(self.state.news_urls)
 
-                tasks = [create_task(self._process_page_of_links(url)) for url in self.state.pages_failed]
+                tasks = [create_task(self._process_page_of_links(url, session, self.max_requests)) for url in self.state.pages_failed]
 
                 # Create TQDM widget for Jupyter Notebooks launching
                 pbar = wrap_with_tqdm(
@@ -407,101 +516,9 @@ class YahooFinanceParser:
                     else:
                         was_progress = True
 
-        self.state.session = None
         print(f"Total сollected URLs {len(self.state.news_urls)}")
 
         return self.state.news_urls
-
-    # ==================================== #
-    #           GENERAL FUNCTIONS          #
-    # ==================================== #
-
-    def add_proxy(self, host: str, username: str, password: str) -> NoReturn:
-        ...
-
-    async def fetch_page(self, url: str) -> Optional[HTMLParser]:
-        """
-        Description
-        ---
-        The function tries to make a GET request on `url` and get the HTML tree of the page.
-
-        Observed errors:
-            - Page with links to the day's news:
-                - `404`
-                "Will be right back...
-                Thank you for your patience.
-                Our engineers are working quickly to resolve the issue."
-                - `429`
-                "too many requests"
-                - `502`
-                    ...
-            - Article pages:
-                - `404`
-                - `429`
-                "too many requests"
-                - `500`
-
-        For each GET request, the function **generates a random User-Agent** and pauses
-        randomly asynchronously within `self.req_delay_range` to reduce the likelihood
-        of exceeding an **unknown request rate limit** from a single IP address.
-
-        All errors occurring within this function, except for session errors,
-        are output as text to the terminal
-
-        Parameters
-        ---
-        url: str
-            any link to Yahoo! Finance (for example "https://finance.yahoo.com/sitemap/YYYY_MM_DD"
-            or "https://finance.yahoo.com/news/ARTICLE-ID.html")
-
-        Raises
-        ---
-        Exception("There is no opened session.")
-            if for some reasons the asynchronous client session was not opened
-        asyncio.TimeoutError
-            the reasons can be varied, but they are almost always related
-            to your or proxy server slow internet connection
-        """
-
-        if self.state.session is None:
-            raise Exception("There is no opened session.")
-
-        headers = {
-            **HEADERS,
-            "User-Agent": generate(
-                device='desktop',
-                browser='chrome',
-                platform=['windows', 'macos']
-            ).text
-        }
-
-        async with self.max_requests:
-            await sleep(uniform(*self.req_delay_range))
-
-            try:
-                response = await self.state.session.get(url, headers=headers)
-            except TimeoutError as error:
-                print(f"Cannot fetch the page {url=} because of INTERNET CONNECTION or REGIONAL RESTRICTIONS: {error.__repr__()}")
-                return None
-            except ClientConnectorError as error:
-                print(f"Cannot fetch the page {url=} because of REDIRECTION: {error.__repr__()}")
-                return None
-
-            if response.status == 200:
-                try:
-                    html = await response.text()
-                except RuntimeError as error:
-                    print(f"Cannot fetch a text from the page {url=} because of PROXY BLOCKING: {error.__repr__()}")
-                    return None
-                except Exception as error:
-                    print(f"Cannot fetch a text from the page {url=} UNKNOWN REASON: {error.__repr__()}")
-                    return None
-
-                tree = HTMLParser(html)
-                return tree
-            # elif response.status not in (404, 429, 502, 500):
-            print(f"Cannot process the page {url=} because of STATUS CODE {response.status}.")
-            return None
 
     # ==================================== #
     #          ARTICLE FUNCTIONS           #
@@ -589,14 +606,17 @@ class YahooFinanceParser:
         """Checks if article is available only with PERMIUM access"""
         return True if tree.css_first(self.selectors.ARTICLE_PREMIUM) else False
 
-    async def get_article(self, url: str) -> None:
+    async def get_article(self, url: str, session: ClientSession, max_requests: Semaphore) -> None:
         """
         # TODO: Write docstring
         """
         self.state.articles_in_progress.add(url)
 
         # Get the HTML tree of the passed URL
-        tree = await self.fetch_page(url)
+        tree = await fetch_page(
+            url, session, max_requests,
+            uniform(*self.req_delay_range)
+        )
         if tree is None:
             # Couldn't get the tree
             self.state.articles_in_progress.discard(url)
@@ -633,132 +653,73 @@ class YahooFinanceParser:
         self.state.articles_cache.append(article_data)
 
     async def get_all_articles(
-            self, urls: Sequence[str], file_path: Optional[str] = None,
-            max_requests: int = 14, chunk_size: int = 1000,
-            proxies: ... = ..., logging: bool = False,
-            chunk_progress: bool = False
+            self,
+            urls: Sequence[str],
+            *,
+            file_path: Optional[str] = None,
+            chunk_size: int = 1000,
+            tqdm_progress: bool = True,
+            use_proxies: bool = False,
+            logging: bool = False,
     ) -> pl.DataFrame:
         """
-        # TODO: Write docstring
+        For proxies chunking is not implemented.
+        ---
+        Parameters:
+        file_path: Optional[str]
+            starts without "/", contain target file name (example: "data/raw/articles.parquet")
         """
         # TODO: Возвращать то, что спаршено именно сейчас, а не вместе с исходным содержимым целевого файла
-        self.max_requests = Semaphore(max_requests)
+
+        if use_proxies:
+            df = await self._get_articles_with_proxies(
+                urls, file_path=file_path, chunk_size=chunk_size,
+                logging=logging, tqdm_progress=tqdm_progress
+            )
+            return df
+
         size = 8190 * 20
+        # Open asyncronious session
+        async with ClientSession(max_line_size=size, max_field_size=size) as session:
+            tasks = [create_task(self.get_article(url, session, self.max_requests)) for url in urls]
 
-        # Opening asyncronious session
-        session = ClientSession(max_line_size=size, max_field_size=size)
-        self.state.session = session
+            if tqdm_progress: pbar = wrap_with_tqdm("Processing articles", tasks, hide=False)
 
-        if file_path:
-            chunk_index = 0
-            chunk_dir = f"{"/".join(file_path.split("/")[:-1])}/chunks/".lstrip("/")
-            chunk_file_paths = []
+            if file_path:
+                chunk_index = 0
+                chunk_dir = f"{"/".join(file_path.split("/")[:-1])}/chunks/".lstrip("/")
+                chunk_file_paths = []
 
-            if not os.path.isdir(chunk_dir):
-                os.mkdir(chunk_dir)
+                # Create folder for chunks if it's not exists
+                if not os.path.isdir(chunk_dir):
+                    os.mkdir(chunk_dir)
 
-            try:
-                for start in tqdm(range(0, len(urls), chunk_size), desc="Processing articles"):
-                    # If something will go wrong during concatenation, parsed articles will save in cache
+                try:
+                    for start in range(0, len(urls), chunk_size):
+                        # If something will go wrong during concatenation, parsed articles will save in cache
+                        self.state.articles_cache = list()
+                        # Take slice of tasks
+                        chunk = tasks[start:start+chunk_size]
+                        # Run article parsing on current chunk
+                        await gather(*chunk)
+                        # Write chunk to the Parquet file
+                        self.__save_chunk(chunk_dir, chunk_index, chunk_file_paths, logging)
+                        chunk_index += 1
+                    # Clear cache
                     self.state.articles_cache = list()
+                except Exception as error:
+                    raise error
+                finally:
+                    if tqdm_progress: pbar.close()
+                    # Grab all temporary chunked files (that was written during current function call),
+                    # all cached data (if it exists), previously written data (if it exists)
+                    # for merge and write it all to Parquet file
+                    df = self.__save_articles(file_path, chunk_dir, chunk_file_paths, logging)
+                    return df
 
-                    chunk = urls[start:start+chunk_size]
-                    tasks = [create_task(self.get_article(url)) for url in chunk]
-
-                    # Create TQDM widget for Jupyter Notebooks launching
-                    if chunk_progress:
-                        tasks, pbar = wrap_with_tqdm(
-                            f"Processing chunk №{chunk_index}",
-                            tasks=tasks,
-                            hide=True
-                        )
-                        # Run article parsing on current chunk
-                        await gather(*tasks)
-                        pbar.close()
-                    else:
-                        # Run article parsing on current chunk
-                        await gather(*tasks)
-
-                    chunk_df = pl.DataFrame(
-                        data=self.state.articles_cache,
-                        schema=schema,
-                        infer_schema_length=None
-                    )
-                    # Save DataFrame with chunk to Parquet file
-                    chunk_file_path = chunk_dir + "_".join(["chunk", str(chunk_index)]) + ".parquet"
-                    chunk_df.write_parquet(file=chunk_file_path)
-
-                    chunk_file_paths.append(chunk_file_path)
-
-                    if logging:
-                        print(
-                            "==============================================================================\n"
-                            f"Chunk {chunk_index} saved successfully: {chunk_df.shape[0]} rows.\n"
-                            f"File: {chunk_file_path}.\n"
-                            f"Size (estimated): {chunk_df.estimated_size("mb"):.2f} MB.\n"
-                            f"Size (real): {os.path.getsize(chunk_file_path) / (1024 * 1024):.2f} MB.\n"
-                            "=============================================================================="
-                        )
-                    chunk_index += 1
-                # Clean cache
-                self.state.articles_cache = list()
-            except Exception as error:
-                raise error
-            finally:
-                # Grab all temporary chunked files, that was written during current function call
-                dfs = [
-                    pl.read_parquet(chunk_file_path)
-                    for chunk_file_path in chunk_file_paths
-                ]
-
-                # Grab all cached data if it exists
-                if self.state.articles_cache:
-                    cache = pl.DataFrame(
-                        data=self.state.articles_cache,
-                        schema=schema,
-                        infer_schema_length=None
-                    )
-                    dfs.append(cache)
-
-                # Grab all previously written data if it exists
-                if os.path.isfile(file_path):
-                    dfs.append(pl.read_parquet(file_path))
-
-                # Merge and write all collected data
-                merged_df = pl.concat(dfs)
-                merged_df.write_parquet(file_path)
-
-                if logging:
-                    print(
-                        "==============================================================================\n"
-                        f"Articles were saved successfully: {merged_df.shape[0]} rows.\n"
-                        f"File: {file_path}.\n"
-                        f"Size (estimated): {merged_df.estimated_size("mb"):.2f} MB.\n"
-                        f"Size (real): {os.path.getsize(file_path) / (1024 * 1024):.2f} MB.\n"
-                        "=============================================================================="
-                    )
-
-                # Delete all temporary files
-                for chunk_file_path in chunk_file_paths:
-                    os.remove(chunk_file_path)
-                os.rmdir(chunk_dir)
-
-                await session.close()
-                self.state.session = None
-
-                return merged_df
-
-        tasks = [create_task(self.get_article(url)) for url in urls]
-
-        # Create TQDM widget for Jupyter Notebooks launching
-        pbar = wrap_with_tqdm(
-            "Processing articles",
-            tasks=tasks,
-            hide=False
-        )
-        # Run all article parsing in once
-        await gather(*tasks)
-        pbar.close()
+            # Run all article parsing in once
+            await gather(*tasks)
+        if tqdm_progress: pbar.close()
 
         df = pl.DataFrame(data=self.state.articles_cache, schema=schema, infer_schema_length=None)
 
@@ -769,9 +730,155 @@ class YahooFinanceParser:
                 f"Size (estimated): {df.estimated_size("mb"):.2f} MB.\n"
                 "=============================================================================="
             )
-
-        # Close asyncronious session
-        await session.close()
-        self.state.session = None
-
         return df
+
+    async def _get_articles_with_proxies(
+            self,
+            urls: Sequence[str],
+            *,
+            file_path: Optional[str] = None,
+            chunk_size: int = 1000,
+            logging: bool = False,
+            tqdm_progress: bool = True
+    ):
+        """..."""
+        # Ckeck whether any proxy exists
+        if not self.proxy_manager.proxies:
+            raise Exception("There is no proxies. Add proxies using method `add_proxy()`")
+
+        chunk_size, residue = divmod(len(urls), len(self.proxy_manager.proxies))
+        all_tasks = []
+        size = 8190 * 20
+
+        for i, proxy in enumerate(self.proxy_manager.proxies):
+            # Create proxy related asyncronious session
+            proxy.session = ClientSession(
+                max_line_size=size, max_field_size=size,
+                proxy=str(proxy)
+            )
+            # Forming a link chunk
+            proxy_urls = urls[i * chunk_size + min(i, residue): (i + 1) * chunk_size + min(i + 1, residue)]
+            # Convert links into tasks
+            for url in proxy_urls:
+                task = create_task(self.get_article(url, proxy.session, proxy.max_requests))
+                all_tasks.append(task)
+
+        if tqdm_progress: pbar = wrap_with_tqdm("Processing articles", all_tasks, hide=False)
+        # Run all article parsing in once
+        await gather(*all_tasks)
+        if tqdm_progress: pbar.close()
+
+        # Close each proxy related asyncronious session
+        for proxy in self.proxy_manager.proxies:
+            await proxy.session.close() # type: ignore
+            proxy.session = None
+
+        if file_path:
+            # Grab all temporary chunked files (that was written during current function call),
+            # all cached data (if it exists), previously written data (if it exists)
+            # for merge and write it all to Parquet file
+            df = self.__save_articles(file_path, logging=logging)
+            return df
+
+        df = pl.DataFrame(data=self.state.articles_cache, schema=schema, infer_schema_length=None)
+
+        if logging:
+            print(
+                "==============================================================================\n"
+                f"URLs parsed successfully: {df.shape[0]} rows.\n"
+                f"Size (estimated): {df.estimated_size("mb"):.2f} MB.\n"
+                "=============================================================================="
+            )
+        return df
+
+    def __save_chunk(
+            self,
+            chunk_dir: str,
+            chunk_index: int,
+            chunk_file_paths: List[str],
+            logging: bool
+    ) -> None:
+        """
+        Parameters
+        ---
+        chunk_file_paths: str
+            weakref to list
+        """
+        chunk_df = pl.DataFrame(
+            data=self.state.articles_cache,
+            schema=schema,
+            infer_schema_length=None
+        )
+        # Save DataFrame with chunk to Parquet file
+        chunk_file_path = chunk_dir + "_".join(["chunk", str(chunk_index)]) + ".parquet"
+        chunk_df.write_parquet(file=chunk_file_path)
+
+        chunk_file_paths.append(chunk_file_path)
+
+        if logging:
+            print(
+                "==============================================================================\n"
+                f"Chunk {chunk_index} saved successfully: {chunk_df.shape[0]} rows.\n"
+                f"File: {chunk_file_path}.\n"
+                f"Size (estimated): {chunk_df.estimated_size("mb"):.2f} MB.\n"
+                f"Size (real): {os.path.getsize(chunk_file_path) / (1024 * 1024):.2f} MB.\n"
+                "=============================================================================="
+            )
+
+    def __save_articles(
+            self,
+            file_path: str,
+            chunk_dir: Optional[str] = None,
+            chunk_file_paths: Optional[List[str]] = None,
+            logging: bool = False
+    ) -> pl.DataFrame:
+        """
+        Если есть chunk_dir, то и chunk_file_paths должен быть
+        Parameters
+        ---
+        chunk_file_paths: str
+            weakref to list
+        """
+        dfs = []
+
+        if chunk_dir:
+            # Grab all temporary chunked files, that was written during current function call
+            dfs = [
+                pl.read_parquet(chunk_file_path)
+                for chunk_file_path in chunk_file_paths # type: ignore
+            ]
+
+        # Grab all cached data if it exists
+        if self.state.articles_cache:
+            cache = pl.DataFrame(
+                data=self.state.articles_cache,
+                schema=schema,
+                infer_schema_length=None
+            )
+            dfs.append(cache)
+
+        # Grab all previously written data if it exists
+        if os.path.isfile(file_path):
+            dfs.append(pl.read_parquet(file_path))
+
+        # Merge and write all collected data
+        merged_df = pl.concat(dfs)
+        merged_df.write_parquet(file_path)
+
+        if logging:
+            print(
+                "==============================================================================\n"
+                f"Articles were saved successfully: {merged_df.shape[0]} rows.\n"
+                f"File: {file_path}.\n"
+                f"Size (estimated): {merged_df.estimated_size("mb"):.2f} MB.\n"
+                f"Size (real): {os.path.getsize(file_path) / (1024 * 1024):.2f} MB.\n"
+                "=============================================================================="
+            )
+
+        if chunk_dir:
+            # Delete all temporary files
+            for chunk_file_path in chunk_file_paths: # type: ignore
+                os.remove(chunk_file_path)
+            os.rmdir(chunk_dir)
+
+        return merged_df
