@@ -1,4 +1,3 @@
-# Standart library
 import os
 import datetime
 from random import uniform
@@ -26,8 +25,7 @@ from typing import (
     Union
 )
 
-# External libraries
-from aiohttp import ClientSession, BasicAuth, ClientConnectorError
+from aiohttp import ClientSession, ClientConnectorError, ClientTimeout
 from selectolax.parser import HTMLParser
 from ua_generator import generate
 import polars as pl
@@ -211,14 +209,6 @@ class YahooFinanceParser:
             ip_adress: str = "", port: str = ""
     ) -> None:
         self.proxy_manager.add_proxy(url, proxy, protocol, login, password, ip_adress, port)
-
-    async def do_with_proxy(self, tasks: List[Task], proxy: ProxyDense) -> List[Any]:
-        # TODO: Решить куда и как сохранять сессии
-        size = 8190 * 20
-
-        # Opening asyncronious session
-        async with ClientSession(max_line_size=size, max_field_size=size, proxy=str(proxy)):
-            return await gather(*tasks)
 
     # ==================================== #
     #          SITEMAP FUNCTIONS           #
@@ -754,7 +744,7 @@ class YahooFinanceParser:
             # Create proxy related asyncronious session
             proxy.session = ClientSession(
                 max_line_size=size, max_field_size=size,
-                proxy=str(proxy)
+                proxy=str(proxy), timeout=ClientTimeout(total=30)
             )
             # Forming a link chunk
             proxy_urls = urls[i * chunk_size + min(i, residue): (i + 1) * chunk_size + min(i + 1, residue)]
@@ -764,32 +754,36 @@ class YahooFinanceParser:
                 all_tasks.append(task)
 
         if tqdm_progress: pbar = wrap_with_tqdm("Processing articles", all_tasks, hide=False)
-        # Run all article parsing in once
-        await gather(*all_tasks)
-        if tqdm_progress: pbar.close()
 
-        # Close each proxy related asyncronious session
-        for proxy in self.proxy_manager.proxies:
-            await proxy.session.close() # type: ignore
-            proxy.session = None
+        try:
+            # Run all article parsing in once
+            await gather(*all_tasks)
+        except Exception as error:
+            raise error
+        finally:
+            if tqdm_progress: pbar.close()
+            # Close each proxy related asyncronious session
+            for proxy in self.proxy_manager.proxies:
+                await proxy.session.close() # type: ignore
+                proxy.session = None
 
-        if file_path:
-            # Grab all temporary chunked files (that was written during current function call),
-            # all cached data (if it exists), previously written data (if it exists)
-            # for merge and write it all to Parquet file
-            df = self.__save_articles(file_path, logging=logging)
+            if file_path:
+                # Grab all temporary chunked files (that was written during current function call),
+                # all cached data (if it exists), previously written data (if it exists)
+                # for merge and write it all to Parquet file
+                df = self.__save_articles(file_path, logging=logging)
+                return df
+
+            df = pl.DataFrame(data=self.state.articles_cache, schema=schema, infer_schema_length=None)
+
+            if logging:
+                print(
+                    "==============================================================================\n"
+                    f"URLs parsed successfully: {df.shape[0]} rows.\n"
+                    f"Size (estimated): {df.estimated_size("mb"):.2f} MB.\n"
+                    "=============================================================================="
+                )
             return df
-
-        df = pl.DataFrame(data=self.state.articles_cache, schema=schema, infer_schema_length=None)
-
-        if logging:
-            print(
-                "==============================================================================\n"
-                f"URLs parsed successfully: {df.shape[0]} rows.\n"
-                f"Size (estimated): {df.estimated_size("mb"):.2f} MB.\n"
-                "=============================================================================="
-            )
-        return df
 
     def __save_chunk(
             self,
