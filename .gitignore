@@ -24,6 +24,7 @@ paper/main.synctex.gz
 batch_*.parquet
 articles.parquet
 failed.parquet
+all_in_one.ipynb
 
 # Игнорируются папки
 logs/
