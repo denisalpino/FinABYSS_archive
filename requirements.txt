@@ -14,3 +14,5 @@ Brotli==1.1.0
 ua_generator==2.0.3
 selectolax==0.3.28
 alpha_vantage==3.0.0
+plotly=6.0.0
+kaleido==0.2.1
