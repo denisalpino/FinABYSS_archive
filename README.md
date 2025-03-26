@@ -11,3 +11,5 @@
 - [PyTorch](https://github.com/pytorch/pytorch);
 - [TensorBoard](https://pytorch.org/tutorials/recipes/recipes/tensorboard_with_pytorch.html) (доки по работе с PyTorch)
 - [Polars](https://docs.pola.rs/) -- для ускорения работы с данными (похожий API на `pandas`)
+
+Датасет со всеми статьями расположен в [репозитории](https://huggingface.co/datasets/denisalpino/YahooFinanceNewsRaw) на HuggingFace.
