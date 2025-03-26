@@ -23,6 +23,7 @@ paper/main.synctex.gz
 *.sqlite3
 batch_*.parquet
 articles.parquet
+articles_preprocessed.parquet
 failed.parquet
 all_in_one.ipynb
 
