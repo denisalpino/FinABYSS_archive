@@ -1,4 +1,4 @@
-\documentclass[a4paper,12pt]{extarticle}
+\documentclass[a4paper,12pt]{extarticle} % На предупрежденгие насрать, все норм компиилирутся и славно
 \input{preamble.tex}
 
 \begin{document}
@@ -20,17 +20,7 @@
     % Первая теоретическая глава
     \newpage
     \section{THEORETICAL OVERVIEW}
-    \subsection{Problem statement}
-    <<...>>
-
-    \subsection{Methodology}
-    <<...>>
-
-    \subsubsection{Literature review}
-    <<...>>
-
-    \subsubsection{Tool review}
-    <<...>>
+    \input{struct/10_theoretical_part/10_theoretical_part.tex}
 
     % Вторая практическая глава
     \newpage
@@ -46,11 +36,12 @@
     \specialsection{Conclusion}
     <<...>>
 
+    \printbibliography
     % Библиография в cpsconf стиле
     % Аргумент {1} ниже включает переопределенный стиль с выравниванием слева
-    \begin{thebibliography}{1}
-        \bibitem{voc} Griffin D.W., Lim J.S. \flqq Multiband excitation vocoder\frqq. IEEE ASSP-36 (8), 1988, pp. 1223-1235.
-        \bibitem{vo2} Griffin D.W., Lim J.S. \flqq Multiband  vocoder\frqq. IEEE ASSP-36 (8).
-        \bibitem{vo3} Griffin D.W. \flqq Multiband \frqq. IEEE ASSP-36 (8).
-    \end{thebibliography}
+    % \begin{thebibliography}{1}
+    %     \bibitem{voc} Griffin D.W., Lim J.S. \flqq Multiband excitation vocoder\frqq. IEEE ASSP-36 (8), 1988, pp. 1223-1235.
+    %     \bibitem{vo2} Griffin D.W., Lim J.S. \flqq Multiband  vocoder\frqq. IEEE ASSP-36 (8).
+    %     \bibitem{vo3} Griffin D.W. \flqq Multiband \frqq. IEEE ASSP-36 (8).
+    % \end{thebibliography}
 \end{document}
