@@ -3,9 +3,10 @@
 
 % Язык, кодировка, шрифт
 \usepackage[utf8]{inputenc}
-\usepackage[T2A]{fontenc}
+\usepackage[T1]{fontenc}
 \usepackage[english]{babel}
-\renewcommand{\rmdefault}{Tempora-TLF}
+%\renewcommand{\rmdefault}{Tempora-TLF}
+\usepackage{mathptmx}
 
 % Межстрочный интервал = 1.5pt
 \usepackage{setspace}
@@ -74,8 +75,16 @@
 \newcommand{\MList}[1]{\par\begin{itemize}#1\end{itemize}}
 \newcommand{\NList}[1]{\par\begin{enumerate}#1\end{enumerate}}
 
+
+% Задаем отступ у списков равным обычному абзацному отступу (\parindent)
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=\dimexpr\parindent\relax}
+\setlist[enumerate]{leftmargin=\dimexpr\parindent\relax}
+
 % Нумерация только тех формул, на которые в тексте присутствует ссылка
-\usepackage{autonum}
+% \usepackage{autonum}
+% Правка нумерации формул: числа справа в скобках
+\renewcommand{\theequation}{\arabic{equation}}
 
 % Список литературы
 \makeatletter
@@ -121,3 +130,6 @@
 
 \usepackage{amsthm,amssymb,amsmath}
 \usepackage{textcomp}
+
+% Для коректной работы H в фигурах и ссылок на фигуры
+\usepackage{float}
