@@ -8,6 +8,15 @@
 %\renewcommand{\rmdefault}{Tempora-TLF}
 \usepackage{mathptmx}
 
+\usepackage[
+    backend=biber,
+    style=gost-authoryear,
+    sorting=nty,      % сортировка по имени, титулу, году
+    citecounter=true  % опционально: вывод счетчика цитирования
+]{biblatex}
+\addbibresource{bibliography.bib}
+\usepackage{csquotes}
+
 % Межстрочный интервал = 1.5pt
 \usepackage{setspace}
 \onehalfspacing
@@ -87,35 +96,35 @@
 \renewcommand{\theequation}{\arabic{equation}}
 
 % Список литературы
-\makeatletter
-\renewenvironment{thebibliography}[1]
-    {%
-      \bigskip
-      {\noindent\normalfont\bfseries References\par}%
-      \addcontentsline{toc}{section}{References}%
-      \smallskip
-      \list{\@biblabel{\@arabic\c@enumiv}}%
-           {%
-             \settowidth\labelwidth{\@biblabel{#1}}%
-             \leftmargin\labelwidth
-             \advance\leftmargin\labelsep
-             \@openbib@code
-             \usecounter{enumiv}%
-             \let\p@enumiv\@empty
-             \renewcommand\theenumiv{\@arabic\c@enumiv}%
-           }%
-      \sloppy
-      \clubpenalty4000
-      \@clubpenalty \clubpenalty
-      \widowpenalty4000%
-      \sfcode`\.\@m%
-    }%
-    {%
-      \def\@noitemerr
-        {\@latex@warning{Empty `thebibliography' environment}}%
-      \endlist%
-    }
-\makeatother
+% \makeatletter
+% \renewenvironment{thebibliography}[1]
+%     {%
+%       \bigskip
+%       {\noindent\normalfont\bfseries References\par}%
+%       \addcontentsline{toc}{section}{References}%
+%       \smallskip
+%       \list{\@biblabel{\@arabic\c@enumiv}}%
+%            {%
+%              \settowidth\labelwidth{\@biblabel{#1}}%
+%              \leftmargin\labelwidth
+%              \advance\leftmargin\labelsep
+%              \@openbib@code
+%              \usecounter{enumiv}%
+%              \let\p@enumiv\@empty
+%              \renewcommand\theenumiv{\@arabic\c@enumiv}%
+%            }%
+%       \sloppy
+%       \clubpenalty4000
+%       \@clubpenalty \clubpenalty
+%       \widowpenalty4000%
+%       \sfcode`\.\@m%
+%     }%
+%     {%
+%       \def\@noitemerr
+%         {\@latex@warning{Empty `thebibliography' environment}}%
+%       \endlist%
+%     }
+% \makeatother
 
 
 

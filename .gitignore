@@ -17,6 +17,10 @@ paper/main.toc
 paper/main.log
 paper/main.aux
 paper/main.out
+paper/main.bbl
+paper/main.bcf
+paper/main.blg
+paper/main.run.xml
 paper/main.synctex.gz
 
 # Data files
