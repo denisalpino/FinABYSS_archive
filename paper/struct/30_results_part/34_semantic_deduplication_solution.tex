@@ -1,0 +1,107 @@
+\subsubsection{Mathematical Formulaion}
+\sloppy  % Helps to alleviate overfull hbox warnings
+
+Within the framework of this study, a novel deduplication approach was developed based on the analysis of the semantic content of objects.
+Although in the present work the entity is a text, the method can be readily generalized to any objects that admit a vector representation
+in a semantic space.
+
+Each article is represented as a sequence of embeddings:
+
+\begin{equation}
+    x_i \subset \mathbb{R}^{t\times d}
+\end{equation}
+
+where $t$ is the number of tokens and $d$ is the dimensionality of the semantic vector space. For subsequent analysis, instead of the raw set of embeddings,
+their convex hull is used, denoted as $\operatorname{CH}(x_i)$ or, for brevity, $\operatorname{CH}_i$. The uniqueness of a text is quantified by the volume
+of this convex hull, $\mathrm{vol}(\operatorname{CH}_i)$.
+
+\textbf{Accounting for the Intersections of Convex Hulls.} Direct subtraction of the intersections between $\operatorname{CH}_i$ and the hulls of other
+texts may lead to multiple counting. To eliminate this issue, the inclusion--exclusion principle is applied.
+
+Let the set of all articles except $i$ be denoted by
+
+\begin{equation}
+    \mathbb{I} = \{1, \ldots, N\} \setminus \{i\}.
+\end{equation}
+
+The intersection of $\operatorname{CH}_i$ with the hulls of articles indexed by subsets $\mathbb{J} \subseteq \mathbb{I}$ is expressed as:
+
+\begin{equation}
+    \mathrm{vol}\Big(\operatorname{CH}_i \cap \bigcap_{j \in \mathbb{J}}\operatorname{CH}_j\Big).
+\end{equation}
+
+Then, the volume of the intersection of $\operatorname{CH}_i$ with the union of the hulls of the remaining articles is computed as:
+
+\begin{equation}\label{eq:inclusion-exclusion_substituting}
+    \mathrm{vol}\left(\operatorname{CH}_i \cap \bigcup_{j \in \mathbb{I}}\operatorname{CH}_j\right)
+    =
+    \sum_{k=1}^{N-1} (-1)^{k-1} \sum_{\substack{\mathbb{J} \subseteq \mathbb{I} \\ |\mathbb{J}| = k}}
+    \mathrm{vol}\left(\operatorname{CH}_i \cap \bigcap_{j \in \mathbb{J}}\operatorname{CH}_j\right).
+\end{equation}
+
+The uniqueness of article $i$ is defined as the fraction of its convex hull’s volume that is not occupied by intersections with the hulls of other articles:
+
+\begin{equation}
+    \mu_i = \frac{\mathrm{vol}\Big( \operatorname{CH}_i \setminus \bigcup_{j \in \mathbb{I}} \operatorname{CH}_j\Big)}{\mathrm{vol}\Big( \operatorname{CH}_i\Big)}.
+\end{equation}
+
+By decomposing $\operatorname{CH}_i$ into the intersection region and its complement, we obtain:
+
+\begin{equation}
+    \mu_i = 1 - \frac{\mathrm{vol}\left(\operatorname{CH}_i \cap \bigcup_{j \in \mathbb{I}}\operatorname{CH}_j\right)}{\mathrm{vol}\left(\operatorname{CH}_i\right)}.
+\end{equation}
+
+Substituting the inclusion--exclusion formulation \ref{eq:inclusion-exclusion_substituting}, the final expression becomes:
+
+\begin{equation}\label{eq:uniqueness}
+    \mu_i = 1 - \frac{1}{\mathrm{vol}\big(\operatorname{CH}_i\big)}
+    \sum_{k=1}^{N-1} (-1)^{k-1} \sum_{\substack{\mathbb{J} \subseteq \mathbb{I} \\ |\mathbb{J}| = k}}
+    \mathrm{vol}\Big(\operatorname{CH}_i \cap \bigcap_{j \in \mathbb{J}}\operatorname{CH}_j\Big).
+\end{equation}
+
+The value $\mu_i \in [0, 1]$ characterizes the text's uniqueness: $\mu_i = 1$ indicates no intersections with other texts (complete uniqueness),
+while $\mu_i = 0$ implies that the semantic volume of the text is entirely occupied by intersections with the hulls of other texts.
+
+\subsubsection{Pros and Cons}
+The proposed method is founded on a theoretically sound representation of text: each article is treated as the convex hull of its token embeddings.
+This representation enables a precise definition of an object’s semantic content, facilitates the application of the inclusion–exclusion principle
+(inherited from set theory) for accurate calculation of intersection volumes, and normalizes the result so that the final uniqueness measure
+lies within the interval $[0,1]$.
+
+In addition to its theoretical rigor, the method offers several advantages:
+\begin{itemize}
+    \item The use of embeddings for each token allows for capturing subtle distinctions in semantic content, while aggregation via the convex hull
+    yields a generalized representation of the text. This approach enables the comparison of texts of varying lengths and topics within a unified vector space.
+    \item Normalization of the metric to a $[0,1]$ interval simplifies interpretation.
+\end{itemize}
+
+Conversely, the method has several notable drawbacks:
+\begin{itemize}
+    \item In high-dimensional spaces (e.g., 768 dimensions), the convex hull may become excessively "stretched," resulting in uninformative volume measurements,
+    and its geometry may fail to accurately reflect the complex distribution of embeddings.
+    \item Embeddings typically possess a complex, often non-linear structure. As the convex hull is the minimal convex set containing the data, it may enclose
+    extreme points, leading to an overestimation of the occupied space and, consequently, to skewed evaluations.
+    \item Since embeddings can include random noise or artifacts, the convex hull is sensitive to outliers. Minor inaccuracies in embeddings may
+    disproportionately enlarge the convex hull’s volume, thus distorting the uniqueness assessment.
+    \item Constructing the convex hull and computing volumes in high-dimensional spaces is computationally intensive. Moreover, applying the inclusion–exclusion
+    principle to accurately compute intersections between the hulls of texts further complicates calculations, particularly with a large number of documents.
+\end{itemize}
+
+These challenges can critically affect the practical application of the method; however, some can be mitigated through engineering solutions.
+
+The sensitivity to noise (item 3) can be partially alleviated by using the [CLS] token as the centroid of the convex hull. Introducing a coefficient
+$\delta$ to normalize the "concavity" of the hull in the direction of the [CLS] embedding helps to diminish the impact of noisy components.
+
+The computational burden (item 4) can be addressed through various strategies:
+\begin{itemize}
+    \item Regulating the number of inclusion–exclusion pairs (the hyperparameter $N$ in the summation) allows for an approximate evaluation
+    of uniqueness while reducing computational demands.
+    \item Employing dimensionality reduction algorithms, such as UMAP, t-SNE, or PCA, can project the original space onto a lower-dimensional one,
+    substantially decreasing computational costs, though potentially at the expense of some accuracy.
+    \item Approximating the volume using Monte Carlo methods offers an alternative that lessens computational load.
+\end{itemize}
+
+The method of representing semantic uniqueness of text via the convex hulls of embeddings boasts several theoretical advantages (robust normalization,
+applicability of the inclusion–exclusion principle, and consistent interpretability of the result). Nevertheless, its practical deployment necessitates
+addressing challenges related to high dimensionality, non-linear distributions of embeddings, and substantial computational costs. Future research may
+focus on developing more robust and computationally efficient methods for assessing text uniqueness while accommodating these limitations.

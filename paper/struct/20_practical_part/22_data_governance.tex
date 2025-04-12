@@ -1,0 +1,145 @@
+\subsubsection{Selection of Information Resources}
+<<...>>
+
+\subsubsection{Data Collecting}
+<<...>>
+
+\subsubsection{Data Analysis}
+Before commencing the pre-processing stage, it was decided to conduct a comprehensive analysis of the collected corpus of news articles.
+This preliminary analysis not only revealed the characteristic features of the data but also established the foundation for subsequent
+automation of text cleaning and structuring. Moreover, the analysis results have also impacted the quality of the trained model.
+
+\textbf{Local analysis} encompassed a detailed examination of various subsets of the corpus aimed at identifying patterns characteristic
+of non-representative or "noisy" articles. In this process, key signals—such as specific keywords in the titles and opening paragraphs—were
+identified that allow for the automatic filtering out of undesirable texts. Furthermore, the local investigation uncovered potential
+rules for removing marketing fragments, metadata, and other artifacts that adversely affect data quality.
+All the obtained rules were subsequently formalized (see section 2.2.4 for further details).
+
+\textbf{Global analysis} is dedicated to studying the central tendencies of the corpus through descriptive statistics and the analysis
+of various data representations—both metadata and the textual content itself. This approach enabled the evaluation of the distribution
+of key characteristics, the identification of seasonal and thematic patterns, and the preparation of aggregated results that serve
+as the basis for further refinement of the pre-processing methodology.
+
+Below are the aggregated results of the global analysis, which, together with the local findings, allow for a deeper understanding
+of the nature of the collected dataset and help determine directions for its further optimization.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{img/articles_dist_by_dates.png}
+    \caption{Distribution of publications by dates.}
+    \label{fig:dist_by_dates}
+\end{figure}
+
+\textbf{Distribution of publications by dates.} Figure \ref{fig:dist_by_dates} shows that the number of publications
+fluctuates daily with a certain periodicity. A detailed examination revealed that the minimums occur on Sundays and
+public holidays, when fewer financial news items are published. This naturally reflects the market’s characteristics:
+on weekends and holidays, business activity declines, leading to fewer publications.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{img/articles_dist_by_dates_tail.png}
+    \caption{\label{fig:dist_by_dates_tail}Distribution of publications by dates (tail).}
+\end{figure}
+
+At the same time, some articles, by formal characteristics, fall outside the collection period (September 1, 2023 – March 18, 2025).
+Figure \ref{fig:dist_by_dates_tail} displays these "tail" publications, whose count slightly exceeds 200. A more detailed analysis
+determined that these articles were indeed published within the specified interval, but their content was later edited or supplemented.
+As a result, the publication date and time on the corresponding website were updated, and the old version (with the original date) was
+lost. Had the links been parsed not after one week but several weeks later, more such cases would have been observed.
+
+From the perspective of short-term market forecasting, this circumstance may lead to distorted timestamps, making some articles appear
+to have been published later than they actually were. Therefore, the dataset might prove less effective for short-term studies compared
+to medium- and long-term ones (where a shift of a couple of days is less critical). Nevertheless, for this work it does not play
+a crucial role, as the model relies solely on the text of the article and does not take into account the precise publication timestamps.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{img/top30_sources.png}
+    \caption{\label{fig:dist_sources}Top-30 most popular sources of publications.}
+\end{figure}
+
+\textbf{News Sources.} Figure \ref{fig:dist_sources} illustrates the distribution of publications across the 30 most frequent sources.
+The analysis showed that the predominant share of articles (potentially 69.2\%) was published by semi-automated aggregators:
+GlobeNewswire, Zacks, Simply Wall St., PR Newswire, Business Wire, GuruFocus.com, Motley Fool, among others. These aggregators focus
+on the automatic collection of key data from various resources (regulators, official company websites, etc.), publishing press releases,
+brief report summaries, and invitations to corporate events.
+
+Among the top 15 sources, only some can be conditionally considered as "traditional" news outlets, such as Reuters, Insider Monkey,
+CNW Group, Associated Press Finance, and InvestorPlace. Meanwhile, outside the top 30, classic publications that primarily publish
+original articles prevail. In reality, the blurred boundary between original and semi-automatically generated content complicates
+efforts to clearly differentiate them.
+
+According to approximate estimates, out of 1\,300\,000 articles, about 900\,000 (69.2\%) are semi-automated. This is an important factor
+for training a language model because:
+
+\begin{enumerate}
+    \item The quality of such materials is often lower: texts contain artifacts, broken formatting, and incorrectly inserted characters.
+    \item Their volume is large, which, on one hand, provides a substantial sampling capacity, but on the other, complicates cleaning and normalization without the loss of significant information.
+\end{enumerate}
+
+Nevertheless, even "imperfect" texts from aggregators convey useful information about the financial market and companies. However,
+it is extremely important to develop appropriate cleaning and pre-processing rules (discussed in detail in section 2.2.4) to preserve
+the semantic integrity of the texts.
+
+Furthermore, and perhaps more importantly, these semi-automated texts contribute roughly the same total number of tokens
+as the "original" articles (30.8\%), despite their numerical dominance. Consequently, with proper processing, this group of semi-automated
+articles can make a significant contribution to training the language model without diminishing the value of the original texts.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{img/top30_tickers.png}
+    \caption{\label{fig:dist_tickers}Top-30 most popular tickers.}
+\end{figure}
+
+\textbf{Analysis of tickers.} Figure \ref{fig:dist_tickers} presents the distribution of publications by the 30 most frequently mentioned
+tickers. The leader is the S\&P 500 index, although the sample also includes the Dow Jones and Russell 2000. Notably, the top 10 are predominantly
+IT companies, with Nvidia leading by a significant margin.
+
+At the same time, approximately 574\,000 (44.2\%) publications do not contain any tickers in the article header. Moreover, even when tickers
+are present, they may not reflect all the companies or indices mentioned in the article. This indicates that although this dataset column
+is fairly representative, it does not provide complete coverage of all potential tickers, and some news items are formally omitted
+from consideration. Therefore, for tasks beyond the scope of this research, it would be advisable to create a dictionary of terms
+and names associated with each specific ticker and then algorithmically augment the ticker column using the corresponding texts.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{img/wordcloud.png}
+    \caption{\label{fig:wordcloud}Wordcloud of the whole collected corpus.}
+\end{figure}
+
+\textbf{Text Quality.} Figure \ref{fig:wordcloud} shows a word cloud generated from the entire corpus of collected texts.
+From this visualization, the following key conclusions can be drawn:
+
+\begin{enumerate}
+    \item \textbf{Data Representativeness}. The word cloud demonstrates a wide range of financial terms, indicating that the dataset
+    is sufficiently representative of financial topics. This suggests that the material covers various aspects of market activity
+    and economic events.
+    \item \textbf{Specificity of Financial Terminology}. The frequency distribution of financial terms significantly differs from that observed
+    in popular corpora used for training language models (e.g., English Wikipedia or BookCorpus). This discrepancy necessitates the application
+    of DAPT to effectively train the model on domain-specific financial data.
+    \item \textbf{Level of Noise and Presence of Irrelevant Information}. The word cloud includes elements such as “Zacks”, “click”, “please”,
+    “free”, and “source”. This indicates a significant presence of noisy, promotional, or automatically generated fragments, which calls
+    for the development of specialized methods for data cleaning without compromising the semantic integrity of the texts.
+\end{enumerate}
+
+Additionally, it can be noted that the identified noise and dispersion of terms may negatively affect the quality of downstream tasks,
+such as classification or embedding extraction, if the data is not properly processed during the pre-processing stage.
+
+\textbf{Summary}. The collected news dataset is characterized by several notable features. Firstly, there is pronounced seasonality
+in the publications—the minimums occur on weekends and public holidays, and so-called "tail" articles have also been recorded.
+Secondly, the analysis of sources indicates that about 69\% of the texts originate from semi-automated aggregators, which can complicate
+the data cleaning process, as such sources often yield texts with broken formatting, embedded artifacts, and irrelevant information.
+Finally, it has been determined that the dataset exhibits a high variability of financial terminology while also containing a significant
+level of noise, which altogether confirms the need for DAPT and the development of effective text cleaning
+methods.
+
+On one hand, the identified features (time shifts, noise, dominance of semi-automated sources) may reduce the suitability of the dataset
+for short-term forecasting or tasks that require precise timestamping. On the other hand, for tasks oriented toward the semantic content
+of the text, these issues do not have a critical impact. Proper pre-processing, including text cleaning and the removal of irrelevant
+elements, will substantially improve the quality of the trained model and expand its ability to generalize across various types of publications.
+
+\subsubsection{Data Preprocessing}
+<<...>>
+
+\subsubsection{Retrieval of Embeddings}
+<<...>>
