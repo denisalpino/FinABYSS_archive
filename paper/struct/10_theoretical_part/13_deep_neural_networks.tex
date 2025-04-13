@@ -1,0 +1,42 @@
+\subsubsection{Models}
+LSTM \parencite{Hochreiter1997LSTM}
+
+<<...>>
+
+BERT \parencite{devlin2019BERT}
+
+<<...>>
+
+FinBERT (2019 --- first) \parencite{Araci2019FinBERT}
+
+<<...>>
+
+FinBERT (2020 --- good) \parencite{Yang2020FinBERT, Huang2023FinBERT}
+
+<<...>>
+
+FinBERT (2020 --- best) \parencite{Liu2020FinBERT}
+
+<<...>>
+
+ModernBERT \parencite{Warner2024ModernBERT}
+
+<<...>>
+
+\subsubsection{Techniques}
+\textbf{Domain-Adaptive Pretraining (DAPT).} --- \parencite{gururangan2020DAPT}
+
+Based on the calculations, DAPT provides on average a 4\% increase in benchmarks on a relative scale compared to the baseline model,
+which was not domain-specific. This figure is quite significant, considering that for some specific tasks the gains can be as high as 20\%,
+as shown in the paper \parencite*{gururangan2020DAPT}
+
+\textbf{Fusion Mechanisms.} In early fusion, features are integrated as soon as they are extracted using Joint representation or Coordinated
+representation.
+
+In late fusion, integration is performed only after each unimodal network produces a prediction (classification, regression). Late fusion usually
+uses voting schemes, weighted averages and other techniques
+
+There are also hybrid fusion methods. They combine early fusion results and results from unimodal predictors using late fusion.
+
+\textbf{Approaches to representation and clustering of density embeddings.} [CLS] token and Mean-pooling
+

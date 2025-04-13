@@ -1,0 +1,22 @@
+\begin{table}[ht]
+    \caption{Overview of GLUE Benchmark Datasets}
+    \centering
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{|l|l|l|c|c|}
+        \hline
+        \textbf{Name} & \textbf{Task} & \textbf{Source} & \textbf{Size} & \textbf{Metric} \\
+        \hline
+        \textbf{CoLA}   & Single-Sentence Classification & \parencite{dudy2018CoLA} & $\sim$8\,500 & Matthews Correlation Coefficient \\
+        \textbf{SST-2}  & Binary Single-Sentence Sentiment Classification & \parencite{socher2013SST2} & $\sim$67\,000 & Accuracy \\
+        \textbf{MRPC}   & Paraphrase Identification & \parencite{dolan2005MRPC} & $\sim$3\,700 & Accuracy, F1 \\
+        \textbf{STS-B}  & Semantic Textual Similarity (Regression) & \parencite{Cer2017STSB} & $\sim$7\,000 & Pearson/Spearman Correlation \\
+        \textbf{QQP}   & Duplicate Question Detection (Quora Question Pairs) & \parencite{chen2018QQP} & $\sim$364\,000 & Accuracy, F1 \\
+        \textbf{MNLI}  & Multi-Genre Natural Language Inference & \parencite{williams2018MNLI} & $\sim$393\,000 & Accuracy \\
+        \textbf{QNLI}  & Inference Tasks & \parencite{rajpurkar2016QNLI} & $\sim$105\,000 & Accuracy \\
+        \textbf{RTE}   & Recognizing Textual Entailment & \parencite{bentivogli2009RTE} & $\sim$2,500 & Accuracy \\
+        \textbf{WNLI}  & Inference Tasks & \parencite{levesque2012WNLI} & 634 & Accuracy \\
+        \hline
+    \end{tabular}
+    }%
+    \label{tab:GLUE}
+\end{table}

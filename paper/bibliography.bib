@@ -1,3 +1,48 @@
+% ModernBERT model
+@article{Warner2024ModernBERT,
+   abstract = {Encoder-only transformer models such as BERT offer a great performance-size tradeoff for retrieval and classification tasks with respect to larger decoder-only models. Despite being the workhorse of numerous production pipelines, there have been limited Pareto improvements to BERT since its release. In this paper, we introduce ModernBERT, bringing modern model optimizations to encoder-only models and representing a major Pareto improvement over older encoders. Trained on 2 trillion tokens with a native 8192 sequence length, ModernBERT models exhibit state-of-the-art results on a large pool of evaluations encompassing diverse classification tasks and both single and multi-vector retrieval on different domains (including code). In addition to strong downstream performance, ModernBERT is also the most speed and memory efficient encoder and is designed for inference on common GPUs.},
+   author = {Benjamin Warner and Antoine Chaffin and Benjamin Clavié and Orion Weller and Oskar Hallström and Said Taghadouini and Alexis Gallagher and Raja Biswas and Faisal Ladhak and Tom Aarsen and Nathan Cooper and Griffin Adams and Jeremy Howard and Iacopo Poli},
+   month = {12},
+   title = {Smarter, Better, Faster, Longer: A Modern Bidirectional Encoder for Fast, Memory Efficient, and Long Context Finetuning and Inference},
+   url = {http://arxiv.org/abs/2412.13663},
+   year = {2024}
+}
+
+% BERT model
+@inproceedings{devlin2019BERT,
+  title={Bert: Pre-training of deep bidirectional transformers for language understanding},
+  author={Devlin, Jacob and Chang, Ming-Wei and Lee, Kenton and Toutanova, Kristina},
+  booktitle={Proceedings of the 2019 conference of the North American chapter of the association for computational linguistics: human language technologies, volume 1 (long and short papers)},
+  pages={4171--4186},
+  year={2019}
+}
+
+% LSTM model
+@article{Hochreiter1997LSTM,
+   abstract = {Learning to store information over extended time intervals by recurrent backpropagation takes a very long time, mostly because of insufficient, decaying error backflow. We briefly review Hochreiter's (1991) analysis of this problem, then address it by introducing a novel, efficient, gradient-based method called long short-term memory (LSTM). Truncating the gradient where this does not do harm, LSTM can learn to bridge minimal time lags in excess of 1000 discrete-time steps by enforcing constant error flow through constant error carousels within special units. Multiplicative gate units learn to open and close access to the constant error flow. LSTM is local in space and time; its computational complexity per time step and weight is O(1). Our experiments with artificial data involve local, distributed, real-valued, and noisy pattern representations. In comparisons with real-time recurrent learning, back propagation through time, recurrent cascade correlation, Elman nets, and neural sequence chunking, LSTM leads to many more successful runs, and learns much faster. LSTM also solves complex, artificial long-time-lag tasks that have never been solved by previous recurrent network algorithms.},
+   author = {Sepp Hochreiter and Jürgen Schmidhuber},
+   doi = {10.1162/neco.1997.9.8.1735},
+   issn = {08997667},
+   issue = {8},
+   journal = {Neural Computation},
+   month = {11},
+   pages = {1735-1780},
+   pmid = {9377276},
+   publisher = {MIT Press Journals},
+   title = {Long Short-Term Memory},
+   volume = {9},
+   year = {1997}
+}
+
+% BloombrgGpt model
+@article{wu2023BloombrgGpt,
+  title={Bloomberggpt: A large language model for finance},
+  author={Wu, Shijie and Irsoy, Ozan and Lu, Steven and Dabravolski, Vadim and Dredze, Mark and Gehrmann, Sebastian and Kambadur, Prabhanjan and Rosenberg, David and Mann, Gideon},
+  journal={arXiv preprint arXiv:2303.17564},
+  year={2023}
+}
+
+% FinBERTv2 model (2020)
 @article{Yang2020FinBERT,
    abstract = {Contextual pretrained language models, such as BERT (Devlin et al., 2019), have made significant breakthrough in various NLP tasks by training on large scale of unlabeled text re-sources.Financial sector also accumulates large amount of financial communication text.However, there is no pretrained finance specific language models available. In this work,we address the need by pretraining a financial domain specific BERT models, FinBERT, using a large scale of financial communication corpora. Experiments on three financial sentiment classification tasks confirm the advantage of FinBERT over generic domain BERT model. The code and pretrained models are available at https://github.com/yya518/FinBERT. We hope this will be useful for practitioners and researchers working on financial NLP tasks.},
    author = {Yi Yang and Mark Christopher Siy UY and Allen Huang},
@@ -5,4 +50,290 @@
    title = {FinBERT: A Pretrained Language Model for Financial Communications},
    url = {http://arxiv.org/abs/2006.08097},
    year = {2020}
+}
+
+% FinBERTv2 model (2020)
+@article{Huang2023FinBERT,
+   author = {Allen Huang and Hui Wang and Yi Yang},
+   doi = {10.1111/1911-3846.12832},
+   issn = {19113846},
+   issue = {2},
+   journal = {Contemporary Accounting Research},
+   month = {5},
+   pages = {806-841},
+   publisher = {John Wiley and Sons Inc},
+   title = {FinBERT: A Large Language Model for Extracting Information from Financial Text{\textasteriskcentered}},
+   volume = {40},
+   year = {2023}
+}
+
+% FinBERTv1 model (2019)
+@article{Araci2019FinBERT,
+   abstract = {Financial sentiment analysis is a challenging task due to the specialized language and lack of labeled data in that domain. General-purpose models are not effective enough because of the specialized language used in a financial context. We hypothesize that pre-trained language models can help with this problem because they require fewer labeled examples and they can be further trained on domain-specific corpora. We introduce FinBERT, a language model based on BERT, to tackle NLP tasks in the financial domain. Our results show improvement in every measured metric on current state-of-the-art results for two financial sentiment analysis datasets. We find that even with a smaller training set and fine-tuning only a part of the model, FinBERT outperforms state-of-the-art machine learning methods.},
+   author = {Dogu Araci},
+   month = {8},
+   title = {FinBERT: Financial Sentiment Analysis with Pre-trained Language Models},
+   url = {http://arxiv.org/abs/1908.10063},
+   year = {2019}
+}
+
+% FinBERTv3 model (2020) the best
+@techReport{Liu2020FinBERT,
+   abstract = {There is growing interest in the tasks of financial text mining. Over the past few years, the progress of Natural Language Processing (NLP) based on deep learning advanced rapidly. Significant progress has been made with deep learning showing promising results on financial text mining models. However, as NLP models require large amounts of labeled training data, applying deep learning to financial text mining is often unsuccessful due to the lack of labeled training data in financial fields. To address this issue, we present FinBERT (BERT for Financial Text Mining) that is a domain specific language model pre-trained on large-scale financial corpora. In FinBERT, different from BERT, we construct six pre-training tasks covering more knowledge, simultaneously trained on general corpora and financial domain corpora, which can enable FinBERT model better to capture language knowledge and semantic information. The results show that our FinBERT outper-forms all current state-of-the-art models. Extensive experimental results demonstrate the effectiveness and robustness of FinBERT. The source code and pre-trained models of FinBERT are available on-line.},
+   author = {Zhuang Liu and Degen Huang and Kaiyu Huang and Zhuang Li and Jun Zhao},
+   keywords = {AI for lending: General,AI for marketing: AI for consumer sentiment analysis,AI for marketing: General,AI for payment: AI for payment risk modeling,Foundation for AI in FinTech: Analyzing big financial data,Foundation for AI in FinTech: Data mining and knowledge discovery for FinTech,Foundation for AI in FinTech: Deep learning and representation for FinTech,Foundation for AI in FinTech: General,Other areas: Financial decision-support system},
+   title = {FinBERT: A Pre-trained Financial Language Representation Model for Financial Text Mining},
+   url = {http://commoncrawl.org/},
+   year = {2020}
+}
+
+% GLUE benchmark
+@article{wang2018GLUE,
+   title={GLUE: A multi-task benchmark and analysis platform for natural language understanding},
+   author={Wang, Alex and Singh, Amanpreet and Michael, Julian and Hill, Felix and Levy, Omer and Bowman, Samuel R},
+   journal={arXiv preprint arXiv:1804.07461},
+   year={2018}
+}
+
+% FLUE benchmark & FLANG model
+@inproceedings{FLANG2022FLUE,
+   author = {Raj Sanjay Shah and Kunal Chawla and Dheeraj Eidnani and Agam Shah and Wendi Du and Sudheer Chava and Natraj Raman and Charese Smiley and Jiaao Chen and Diyi Yang},
+   title = {When FLUE Meets FLANG: Benchmarks and Large Pretrained Language Model for Financial Domain},
+   booktitle = {Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+   year = {2022},
+   publisher = {Association for Computational Linguistics}
+}
+% Financial PhraseBank (Sentiment Classification) dataset
+@article{Malo2014FPB,
+  author = {P. Malo and A. Sinha and P. Korhonen and J. Wallenius and P. Takala},
+  title = {Good Debt or Bad Debt: Detecting Semantic Orientations in Economic Texts},
+  journal = {Journal of the Association for Information Science and Technology},
+  year = {2014},
+  volume = {65}
+}
+% FiQA 2018 Task-1 (Regression) dataset
+@inproceedings{FiQA2018SA,
+  author = {Maia Macedo and Siegfried Handschuh and Andr{\'e} Freitas and Brian Davis and Ross McDermott and Manel Zarrouk and Alexandra Balahur},
+  title = {WWW'18 Open Challenge: Financial Opinion Mining and Question Answering},
+  booktitle = {Companion Proceedings of The Web Conference 2018},
+  year = {2018},
+  isbn = {9781450356404},
+  publisher = {International World Wide Web Conferences Steering Committee},
+  address = {Republic and Canton of Geneva, CHE},
+  url = {https://doi.org/10.1145/3184558.3192301},
+  doi = {10.1145/3184558.3192301},
+  abstract = {The growing maturity of Natural Language Processing (NLP) techniques and resources is dramatically changing the landscape of many application domains that depend on the analysis of large-scale unstructured data. The finance domain, with its reliance on interpreting multiple unstructured and structured data sources and its demand for fast, comprehensive decision making, has already emerged as a primary ground for experimenting with NLP, Web Mining, and Information Retrieval (IR) techniques for the automatic analysis of financial news and opinions online. This challenge focuses on advancing the state-of-the-art of aspect-based sentiment analysis and opinion-based Question Answering for the financial domain.},
+  pages = {1941--1942},
+  numpages = {2},
+  keywords = {financial domain, opinion mining, question answering},
+  location = {Lyon, France},
+  series = {WWW '18}
+}
+
+% NHC dataset
+@inproceedings{sinha2021NHC,
+  title={Impact of news on the commodity market: Dataset and results},
+  author={Sinha, Ankur and Khandait, Tanmay},
+  booktitle={Advances in Information and Communication: Proceedings of the 2021 Future of Information and Communication Conference (FICC), Volume 2},
+  pages={589--601},
+  year={2021},
+  organization={Springer}
+}
+
+% FinNER dataset
+@inproceedings{alvarado2015FinNER,
+  title={Domain adaption of named entity recognition to support credit risk assessment},
+  author={Alvarado, Julio Cesar Salinas and Verspoor, Karin and Baldwin, Timothy},
+  booktitle={Proceedings of the australasian language technology association workshop 2015},
+  pages={84--90},
+  year={2015}
+}
+
+% FinSBD-3
+@inproceedings{Au2021FinSBD,
+   author = {Au, Willy and Ait-Azzi, Abderrahim and Kang, Juyeon},
+   title = {FinSBD-2021: The 3rd Shared Task on Structure Boundary Detection in Unstructured Text in the Financial Domain},
+   year = {2021},
+   isbn = {9781450383134},
+   publisher = {Association for Computing Machinery},
+   address = {New York, NY, USA},
+   url = {https://doi.org/10.1145/3442442.3451378},
+   doi = {10.1145/3442442.3451378},
+   abstract = {Document processing is a foundational pre-processing task in natural language application applied in the financial domain. In this paper, we present the result of FinSBD-3, the 3rd shared task on Structure Boundary Detection in unstructured text in the financial domain. The shared task is organized as part of the 1st Workshop on Financial Technology on the Web. Participants were asked to create system detecting the boundaries of elements in unstructured text extracted from financial PDF. This edition extends the previous shared tasks by adding boundaries of visual elements such as tables, figures, page headers and page footers; on top of sentences, lists and list items which were already present in previous edition of the shared tasks.},
+   booktitle = {Companion Proceedings of the Web Conference 2021},
+   pages = {276–279},
+   numpages = {4},
+   keywords = {computer vision, document parsing, document segmentation, natural language processing, sentence segmentation, shared task},
+   location = {Ljubljana, Slovenia},
+   series = {WWW '21}
+}
+
+% RULER dataset
+@article{hsieh2024RULER,
+  title={RULER: What's the Real Context Size of Your Long-Context Language Models?},
+  author={Hsieh, Cheng-Ping and Sun, Simeng and Kriman, Samuel and Acharya, Shantanu and Rekesh, Dima and Jia, Fei and Zhang, Yang and Ginsburg, Boris},
+  journal={arXiv preprint arXiv:2404.06654},
+  year={2024}
+}
+
+% Needle In A Haystack dataset
+@misc{Kamradt2023,
+  title={Needle In A Haystack - Pressure Testing LLMs},
+  author={Gregory Kamradt},
+  publisher={Github},
+  year={2023}
+}
+
+% CoLA dataset
+@inproceedings{dudy2018CoLA,
+    title = {A Multi-Context Character Prediction Model for a Brain-Computer Interface},
+    author = {Dudy, Shiran  and
+      Xu, Shaobin  and
+      Bedrick, Steven  and
+      Smith, David},
+    editor = {Faruqui, Manaal  and
+      Sch{\"u}tze, Hinrich  and
+      Trancoso, Isabel  and
+      Tsvetkov, Yulia  and
+      Yaghoobzadeh, Yadollah},
+    booktitle = {Proceedings of the Second Workshop on Subword/Character {LE}vel Models},
+    month = {6},
+    year = {2018},
+    address = {New Orleans},
+    publisher = {Association for Computational Linguistics},
+    url = {https://aclanthology.org/W18-1210/},
+    doi = {10.18653/v1/W18-1210},
+    pages = {72--77},
+    abstract = {Brain-computer interfaces and other augmentative and alternative communication devices introduce language-modeing challenges distinct from other character-entry methods. In particular, the acquired signal of the EEG (electroencephalogram) signal is noisier, which, in turn, makes the user intent harder to decipher. In order to adapt to this condition, we propose to maintain ambiguous history for every time step, and to employ, apart from the character language model, word information to produce a more robust prediction system. We present preliminary results that compare this proposed Online-Context Language Model (OCLM) to current algorithms that are used in this type of setting. Evaluation on both perplexity and predictive accuracy demonstrates promising results when dealing with ambiguous histories in order to provide to the front end a distribution of the next character the user might type.}
+}
+
+% SST-2 dataset
+@inproceedings{socher2013SST2,
+    title = {Recursive Deep Models for Semantic Compositionality Over a Sentiment Treebank},
+    author = {Socher, Richard and Perelygin, Alex and Wu, Jean and Chuang, Jason and Manning, Christopher D. and Ng, Andrew and Potts, Christopher},
+    booktitle = {Proceedings of the 2013 Conference on Empirical Methods in Natural Language Processing},
+    month = {10},
+    year = {2013},
+    address = {Seattle, Washington, USA},
+    publisher = {Association for Computational Linguistics},
+    url = {https://www.aclweb.org/anthology/D13-1170},
+    pages = {1631--1642},
+}
+
+% MRPC dataset
+@inproceedings{dolan2005MRPC,
+    title = {Automatically Constructing a Corpus of Sentential Paraphrases},
+    author = {Dolan, William B. and Brockett, Chris},
+    booktitle = {Proceedings of the Third International Workshop on Paraphrasing ({IWP}2005)},
+    year = {2005},
+    url = {https://aclanthology.org/I05-5002/}
+}
+
+% STS-B dataset
+@inproceedings{Cer2017STSB,
+   title={SemEval-2017 Task 1: Semantic Textual Similarity Multilingual and Crosslingual Focused Evaluation},
+   url={http://dx.doi.org/10.18653/v1/S17-2001},
+   DOI={10.18653/v1/s17-2001},
+   booktitle={Proceedings of the 11th International Workshop on Semantic Evaluation (SemEval-2017)},
+   publisher={Association for Computational Linguistics},
+   author={Cer, Daniel and Diab, Mona and Agirre, Eneko and Lopez-Gazpio, Inigo and Specia, Lucia},
+   year={2017}
+}
+
+% QQP dataset
+@misc{chen2018QQP,
+   title={Quora question pairs.},
+   author={Z. Chen and H. Zhang and X. Zhang and L. Zhao},
+   year={2017}
+}
+
+% MNLI dataset
+@misc{williams2018MNLI,
+      title={A Broad-Coverage Challenge Corpus for Sentence Understanding through Inference},
+      author={Adina Williams and Nikita Nangia and Samuel R. Bowman},
+      year={2018},
+      eprint={1704.05426},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/1704.05426},
+}
+
+% QNLI dataset
+@article{rajpurkar2016QNLI,
+  title={Squad: 100,000+ questions for machine comprehension of text},
+  author={Rajpurkar, Pranav and Zhang, Jian and Lopyrev, Konstantin and Liang, Percy},
+  journal={arXiv preprint arXiv:1606.05250},
+  year={2016}
+}
+
+% RTE dataset
+@article{bentivogli2009RTE,
+  title={The Fifth PASCAL Recognizing Textual Entailment Challenge.},
+  author={Bentivogli, Luisa and Clark, Peter and Dagan, Ido and Giampiccolo, Danilo},
+  journal={TAC},
+  volume={7},
+  number={8},
+  pages={1},
+  year={2009},
+  publisher={Citeseer}
+}
+
+% WNLI dataset
+@article{levesque2012WNLI,
+  title={The Winograd schema challenge.},
+  author={Levesque, Hector J and Davis, Ernest and Morgenstern, Leora},
+  journal={KR},
+  volume={2012},
+  pages={13th},
+  year={2012}
+}
+
+% Domain-Adaptive Pretraining algorithm
+@article{gururangan2020DAPT,
+  title={Don't stop pretraining: Adapt language models to domains and tasks},
+  author={Gururangan, Suchin and Marasovi{\'c}, Ana and Swayamdipta, Swabha and Lo, Kyle and Beltagy, Iz and Downey, Doug and Smith, Noah A},
+  journal={arXiv preprint arXiv:2004.10964},
+  year={2020}
+}
+
+% FinBERT + LSTM
+@article{Halder2022,
+   author = {Shayan Halder},
+   month = {11},
+   title = {FinBERT-LSTM: Deep Learning based stock price prediction using News Sentiment Analysis},
+   url = {http://arxiv.org/abs/2211.07392},
+   year = {2022}
+}
+
+% FinBERT + LSTM
+@article{Jiang2023,
+   abstract = {We apply sentiment analysis in financial context using FinBERT, and build a deep neural network model based on LSTM to predict the movement of financial market movement. We apply this model on stock news dataset, and compare its effectiveness to BERT, LSTM and classical ARIMA model. We find that sentiment is an effective factor in predicting market movement. We also propose several method to improve the model.},
+   author = {Tingsong Jiang and Andy Zeng},
+   month = {6},
+   title = {Financial sentiment analysis using FinBERT with application in predicting stock movement},
+   url = {http://arxiv.org/abs/2306.02136},
+   year = {2023}
+}
+
+% FinBERT + LSTM (основная работа)
+@article{Kim2023,
+   author = {Jihwan Kim and Hui Sang Kim and Sun Yong Choi},
+   doi = {10.3390/axioms12090835},
+   issn = {20751680},
+   issue = {9},
+   journal = {Axioms},
+   month = {9},
+   publisher = {Multidisciplinary Digital Publishing Institute (MDPI)},
+   title = {Forecasting the S\&P 500 Index Using Mathematical-Based Sentiment Analysis and Deep Learning Models: A FinBERT Transformer Model and LSTM},
+   volume = {12},
+   year = {2023}
+}
+
+% Attention algotithm
+@article{vaswani2017attention,
+  title={Attention is all you need},
+  author={Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, {\L}ukasz and Polosukhin, Illia},
+  journal={Advances in neural information processing systems},
+  volume={30},
+  year={2017}
 }

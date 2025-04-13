@@ -11,8 +11,8 @@
 \usepackage[
     backend=biber,
     style=gost-authoryear,
-    sorting=nty,      % сортировка по имени, титулу, году
-    citecounter=true  % опционально: вывод счетчика цитирования
+    movenames=false, % Если авторов больше 4 кеакого-то хрена меняло на название работы
+    otherlangs=true
 ]{biblatex}
 \addbibresource{bibliography.bib}
 \usepackage{csquotes}
@@ -127,7 +127,6 @@
 % \makeatother
 
 
-
 % Пакеты по желанию (самые распространенные)
 % Хитрые мат. символы
 \usepackage{euscript}
@@ -142,3 +141,5 @@
 
 % Для коректной работы H в фигурах и ссылок на фигуры
 \usepackage{float}
+
+\usepackage{hyperref}

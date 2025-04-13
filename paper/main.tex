@@ -15,7 +15,7 @@
     \pagebreak
 
     \specialsection{Introduction}
-    <<...>>
+    \input{struct/02_introduction.tex}
 
     % Первая теоретическая глава
     \newpage
@@ -34,14 +34,8 @@
 
     \newpage
     \specialsection{Conclusion}
-    <<...>>
+    \input{struct/03_conclusion.tex}
 
-    \printbibliography
-    % Библиография в cpsconf стиле
-    % Аргумент {1} ниже включает переопределенный стиль с выравниванием слева
-    % \begin{thebibliography}{1}
-    %     \bibitem{voc} Griffin D.W., Lim J.S. \flqq Multiband excitation vocoder\frqq. IEEE ASSP-36 (8), 1988, pp. 1223-1235.
-    %     \bibitem{vo2} Griffin D.W., Lim J.S. \flqq Multiband  vocoder\frqq. IEEE ASSP-36 (8).
-    %     \bibitem{vo3} Griffin D.W. \flqq Multiband \frqq. IEEE ASSP-36 (8).
-    % \end{thebibliography}
+    \newrefcontext[sorting=ntvy]
+    \printbibliography[env=gostbibliography]
 \end{document}
