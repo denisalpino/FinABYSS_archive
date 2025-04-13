@@ -1,0 +1,80 @@
+In recent years, the use of data analytics and artificial intelligence, specifically machine learning (ML) and deep learning (DL),
+to make investment decisions has become an integral part of many companies' and funds' strategies. However, today's financial
+markets are characterized by high volatility and high speed of information dissemination, which creates significant challenges
+for analyzing its impact on stock prices.
+
+Events such as news releases, regulatory changes and analysts' reviews can have both immediate and cumulative effects
+on market performance. However, traditional approaches to analyzing data often ignore the dynamics of these influences,
+resulting in poor forecast accuracy and, consequently, ineffective investment strategies.
+
+To compete in a rapidly changing financial environment, companies need to continuously optimize their approaches to data analysis.
+This requires the development of tools that can not only account for the dynamic nature of information, but also provide forecasts
+based on an in-depth analysis of events and their cumulative effect. This paper responds to these challenges by proposing
+a methodology and a technological solution for more accurate stock price forecasting based on deep neural networks,
+namely large language models (LLM).
+
+Classical ML algorithms have demonstrated their effectiveness in financial forecasting in numerous studies.
+However, DL and natural language processing (NLP) architectures have fundamentally shifted the paradigm following
+the emergence of the Transformer architecture in 2017 \parencite{vaswani2017attention}. Since then, LLMs
+have gained wide acceptance and proven their applicability across various applied tasks, including asset price forecasting
+\parencite{Jiang2023, Halder2022, Kim2023}.
+
+Contemporary research demonstrates the high efficacy of LLMs in addressing a range of tasks related to asset evaluation and forecasting.
+Nevertheless, unresolved issues remain regarding the integration of LLMs with classic quantitative models, the scarcity of open-source
+solutions for the financial domain, and the limitations of current models in processing long textual sequences (see Section 1.3.1).
+In December 2024, a new state-of-the-art (SoTA) model, ModernBERT, was introduced, capable of processing texts that are 16 times longer
+than those handled by previous architectures \parencite{Warner2024ModernBERT, devlin2019BERT}. This model extends analytical capabilities
+from isolated headlines or posts to full news articles, press releases, interview transcripts, and analytical reviews. Nonetheless,
+processing comprehensive financial reports (e.g., 10-Q, 10-K) remains a challenging task (see Section 2.1.4). Moreover,
+focusing on full articles helps to mitigate issues related to clickbait and insufficient context.
+
+Pre-trained language models on general text corpora do not always effectively address financial forecasting tasks \parencite{Jiang2023}.
+This is due to the unique nature of financial information, characterized by specialized terminology and jargon, which complicates
+the application of general-purpose models. Consequently, there is a need to adapt baseline LLMs for the financial domain.
+
+From a management perspective, when making investment decisions in volatile markets, it is crucial to promptly analyze the cumulative
+impact of various events (news, regulatory changes, analyses, etc.) on asset dynamics. Experts are unable to process such an immense
+volume of information within extremely short time frames. Conversely, the absence of a comprehensive analysis tool leads to delayed
+or inaccurate decisions, reducing the effectiveness of investment strategies and increasing the risk of missing lucrative opportunities.
+
+The development of such a tool is complex and demanding, and it can be conceptually divided into the following stages:
+\begin{enumerate}
+    \item Development of an effective architecture for LLMs.
+    \item Adaptation of the model to the specifics of the financial domain.
+    \item Fine-tuning of the model to address particular tasks.
+    \item Integration of the model into a system operating with both quantitative and qualitative data, encompassing training, testing,
+    and deployment processes.
+\end{enumerate}
+
+Since the basic architecture of ModernBERT has already been established, the present study focuses on its domain adaptation.
+Among the available adaptation methods --- fine-tuning, complete retraining, and domain-adaptive pretraining --- the latter is emphasized
+in this work (see Section 1.3.2), as it minimizes time, computational, and financial costs.
+
+Within the scope of this research, hierarchical aspect-based analysis of financial publications (see Section 3.2) is considered
+an effective task for financial forecasting. The object of the study is investment strategies based on the use of artificial intelligence,
+while the subject is the integration of language models into asset price forecasting processes. The goal of this work is to develop
+a practice-oriented toolkit for dynamic multimodal forecasting using aspect-based sentiment analysis. It is important to emphasize
+that a key requirement for the proposed solution is its interpretability, in contrast to other approaches that employ deep neural
+networks as black-box models.
+
+Throughout the study, the following key tasks were undertaken:
+\begin{itemize}
+    \item Selection and analysis of SoTA architectures and models (see Section 1.3.1).
+    \item Investigation of cutting-edge techniques and algorithms to enhance the performance of deep neural networks (see Section 1.3.2).
+    \item Evaluation of various metrics, datasets, and benchmarks to assess the efficiency of the final solution (see Section 1.4).
+    \item Determination of the technology stack for developing the solution (see Section 1.5).
+\end{itemize}
+
+In total, more than 6 GB of exclusively financial texts were collected for the domain adaptation of ModernBERT (see Section 2.2.2).
+Following comprehensive analysis and preprocessing of the data (see Sections 2.2.3 and 2.2.4, respectively), the domain adaptation
+of the model was performed (see Section 2.3) and inference was conducted on the task of hierarchical clustering of texts
+(see Section 2.4). The final outcome includes a comparison of key benchmarks between the original and the domain-adapted models
+(see Section 3.1), analysis and interpretation of the results obtained from the hierarchical clustering of financial
+ publications (see Section 3.2), as well as the development of a multimodal architecture for dynamic asset forecasting based
+ on aspect-based sentiment analysis (see Section 3.3) and a mathematical framework for semantic deduplication of texts
+ (see Section 3.4).
+
+ All the results of this study, including data collection code, training code, analyses, and results are available
+ in the official repository of the project\footnote{URL: \url{https://github.com/denisalpino/FinABYSS}}.
+ The domain-adapted model\footnote{URL: None} and the collected
+ corpus\footnote{URL: \url{https://huggingface.co/datasets/denisalpino/YahooFinanceNewsRaw}} are also publicly available.
