@@ -11,6 +11,7 @@ FinABYSS (Financial Aspect-Based Hybrid Semantic System)
 - [Key dependencies](#key-dependencies)
 - [Corpus of financial news articles](#corpus-of-financial-news-articles)
 - [Notes](#notes)
+  - [Project Structure](#project-structure)
   - [P.S.](#ps)
 
 # Functionality
@@ -68,7 +69,132 @@ FinABYSS (Financial Aspect-Based Hybrid Semantic System)
 
 # Corpus of financial news articles
 Датасет со всеми статьями расположен в [репозитории](https://huggingface.co/datasets/denisalpino/YahooFinanceNewsRaw) на HuggingFace.
+
 # Notes
+## Project Structure
+<details>
+<summary>
+FinABYSS
+</summary>
+
+```bash
+├── README.md
+├── data
+│   ├── preprocessed
+│   │   └── articles.parquet
+│   └── raw
+│       ├── articles.parquet
+│       ├── news_urls.parquet
+│       └── ohlcv.parquet
+├── docs
+│   ├── geopolitics.gif
+│   ├── lasso.gif
+│   ├── redirect.gif
+│   ├── semantic_map.png
+│   ├── semantic_similarity.gif
+│   └── trump_by_dates.gif
+├── notebooks
+│   ├── aspects
+│   │   ├── aspects.ipynb
+│   │   ├── data
+│   │   │   ├── data.csv
+│   │   │   └── embeddings.npy
+│   │   ├── hpo.ipynb
+│   │   ├── img
+│   │   │   ├── docs_and_topics.png
+│   │   │   └── intertopic_distance_map.png
+│   │   └── models
+│   │       ├── v1
+│   │       │   ├── aspect.pickle
+│   │       │   └── hpo.csv
+│   │       ├── v2
+│   │       │   ├── hdbscan.pkl
+│   │       │   └── umap.pkl
+│   │       ├── v3
+│   │       │   ├── hdbscan.pkl
+│   │       │   └── umap.pkl
+│   │       ├── v4
+│   │       │   ├── hdbscan.pkl
+│   │       │   ├── hp_importance.jpg
+│   │       │   ├── hpo.jpg
+│   │       │   └── umap.pkl
+│   │       └── v5
+│   │           ├── README.md
+│   │           ├── hdbscan.pkl
+│   │           └── umap.pkl
+│   ├── data_collecting
+│   │   ├── ohlcv.ipynb
+│   │   └── yahoo_articles.ipynb
+│   └── data_preprocessing
+│       ├── articles_preprocessing.ipynb
+│       ├── articles_vizualization.ipynb
+│       ├── feature_extraction.ipynb
+│       └── img
+│           ├── dark
+│           │   ├── articles_dist_by_dates.png
+│           │   ├── articles_dist_by_dates_nvidia.png
+│           │   ├── articles_dist_by_dates_tail.png
+│           │   ├── top30_sources.png
+│           │   ├── top30_tickers.png
+│           │   └── wordcloud.png
+│           └── light
+│               ├── articles_dist_by_dates.png
+│               ├── articles_dist_by_dates_nvidia.png
+│               ├── articles_dist_by_dates_tail.png
+│               ├── top30_sources.png
+│               ├── top30_tickers.png
+│               └── wordcloud.png
+├── paper
+│   ├── bibliography.bib
+│   ├── img
+│   │   ├── articles_dist_by_dates.png
+│   │   ├── articles_dist_by_dates_tail.png
+│   │   ├── datamap.png
+│   │   ├── top30_sources.png
+│   │   ├── top30_tickers.png
+│   │   └── wordcloud.png
+│   ├── main.pdf
+│   ├── main.tex
+│   ├── preamble.tex
+│   ├── struct
+│   │   ├── 00_title.tex
+│   │   ├── 01_statement.tex
+│   │   ├── 02_introduction.tex
+│   │   ├── 03_conclusion.tex
+│   │   ├── 10_theoretical_part
+│   │   │   ├── 10_theoretical_part.tex
+│   │   │   ├── 11_ ai_in_finance.tex
+│   │   │   ├── 12_ml_algos.tex
+│   │   │   ├── 13_deep_neural_networks.tex
+│   │   │   └── 14_evaluation.tex
+│   │   ├── 20_practical_part
+│   │   │   ├── 20_practical_part.tex
+│   │   │   ├── 21_limitations.tex
+│   │   │   ├── 22_data_governance.tex
+│   │   │   ├── 23_domain_adaptation.tex
+│   │   │   └── 24_clustering_task.tex
+│   │   └── 30_results_part
+│   │       ├── 30_results_part.tex
+│   │       ├── 31_benchmarks.tex
+│   │       ├── 32_aspect_based_representation.tex
+│   │       ├── 33_invented_architecture.tex
+│   │       └── 34_semantic_deduplication_solution.tex
+│   └── tab
+│       ├── flue.tex
+│       └── glue.tex
+├── parsers
+│   └── yahoo_parser.py
+├── requirements.txt
+├── semmap.html
+└── utils
+    ├── api_key_manager.py
+    ├── custom_tqdm.py
+    ├── metrics.py
+    ├── proxy_manager.py
+    └── vizualization.py
+```
+</details>
+
 ## P.S.
 После того, как проект будет собран, необходимо установить пакет `pipreqsnb` и запустить из окружения команду `pipreqsnb --ignore .venv,venv --force`, которая автоматически просканирует проект, включая ноутбуки, и сформирует файл `requirements.txt`.
 Опционально, если управление проектом осуществляется через WSL, тогда имеет смысл создать следующим образом алиас:
