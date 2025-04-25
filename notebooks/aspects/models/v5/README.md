@@ -1,3 +1,25 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:472e6dc02309257bba50941c75817b118c2e7cf7626453bb4868b8a389403907
-size 629
+## Hypreparameters opimization was complited with Bayesian Optimization HyperBand with Ray Tune
+
+### Clustering results:
+* clusters = 126;
+* noise    = 2784 observations.
+
+### The best Noiseless Silhouette score: 0.5858
+
+### The best hyperparameters
+* UMAP (cuML):
+  * n_components = 38;
+  * n_neighbors = 17;
+  * min_dist = 0.100331082195;
+  * metric = "cosine".
+* HDBSCAN (cuML):
+  * min_cluster_size = 10;
+  * min_samples = 6;
+  * cluster_selection_epsilon = 0.1907138159624;
+  * cluster_selection_method = "leaf".
+* PaCMAP:
+  * n_components=2;
+  * random_state=42;
+  * distance="angular";
+  * MN_ratio=18;
+  * FP_ratio=4.
