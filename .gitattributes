@@ -2,4 +2,4 @@ notebooks/aspects/models/**/*.pickle filter=lfs diff=lfs merge=lfs -text
 notebooks/aspects/models/**/*.pkl filter=lfs diff=lfs merge=lfs -text
 notebooks/aspects/models/**/*.bin filter=lfs diff=lfs merge=lfs -text
 *.bin filter=lfs diff=lfs merge=lfs -text
-
+notebooks/aspects/data/** filter=lfs diff=lfs merge=lfs -text
