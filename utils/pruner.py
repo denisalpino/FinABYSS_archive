@@ -11,6 +11,8 @@ import optuna
 from optuna.pruners import PercentilePruner
 from optuna.study._study_direction import StudyDirection
 from optuna.trial._state import TrialState
+from optuna.logging import _get_library_root_logger
+logger = _get_library_root_logger()
 
 
 def _get_percentile_intermediate_result_over_trials(
@@ -19,14 +21,21 @@ def _get_percentile_intermediate_result_over_trials(
     step: int,
     percentile: float,
     n_min_trials: int,
+    normalized_weights: list[float]
 ) -> float:
     if len(completed_trials) == 0:
         raise ValueError("No trials have been completed.")
 
-    intermediate_values = [
-        sum(t.intermediate_values) / len(t.intermediate_values)
-        for t in completed_trials if step in t.intermediate_values
-    ]
+    intermediate_values = []
+    for t in completed_trials:
+        if step in t.intermediate_values:
+            intermediate_values_till_step = list(t.intermediate_values.values())[:step]
+            weighted_average = 0
+
+            for val, weight in zip(intermediate_values_till_step, normalized_weights):
+                weighted_average += weight * val
+
+            intermediate_values.append(weighted_average)
 
     if len(intermediate_values) < n_min_trials:
         return math.nan
@@ -34,12 +43,8 @@ def _get_percentile_intermediate_result_over_trials(
     if direction == StudyDirection.MAXIMIZE:
         percentile = 100 - percentile
 
-    return float(
-        np.nanpercentile(
-            np.array(intermediate_values, dtype=float),
-            percentile,
-        )
-    )
+    p = float(np.nanpercentile(np.array(intermediate_values, dtype=float), percentile,))
+    return p
 
 
 def _is_first_in_interval_step(
@@ -64,6 +69,8 @@ class AdaptiveStablePercentilePruner(PercentilePruner):
     def __init__(
         self,
         percentile_range: list,
+        # percentile_weights: list,
+        steps_weights: list,
         n_trials: int,
         n_startup_trials: int = 5,
         n_warmup_steps: int = 0,
@@ -89,6 +96,8 @@ class AdaptiveStablePercentilePruner(PercentilePruner):
             )
 
         self._percentiles = np.linspace(percentile_range[0], percentile_range[1], n_trials - n_startup_trials)
+        self._n_trials = n_trials
+        self._steps_weights = steps_weights
         self._n_startup_trials = n_startup_trials
         self._n_warmup_steps = n_warmup_steps
         self._interval_steps = interval_steps
@@ -118,20 +127,29 @@ class AdaptiveStablePercentilePruner(PercentilePruner):
             return False
 
         direction = study.direction
+
         values = np.asarray(list(trial.intermediate_values.values()), dtype=float)
-        mean_intermediate_result = np.nanmean(values)
-        if math.isnan(mean_intermediate_result):
+        # Нормируем веса для шага
+        weights = np.asarray(self._steps_weights[:step], dtype=float)
+        normalized_weights = weights / np.sum(weights)
+        weighted_mean_intermediate_result = np.average(values, weights=normalized_weights)
+
+        logger.info(f"Trial {trial.number} weighted_mean_intermediate_result for step {step} = {weighted_mean_intermediate_result:.4f}")
+        if math.isnan(weighted_mean_intermediate_result):
             return True
 
         p = _get_percentile_intermediate_result_over_trials(
-            completed_trials, direction, step, self._percentiles[trial.number - self._n_startup_trials], self._n_min_trials
+            completed_trials, direction, step,
+            self._percentiles[min(trial.number, self._n_trials) - self._n_startup_trials], # переделать так, чтобы self._percentiles передавались пользователем
+            self._n_min_trials, normalized_weights
         )
+        logger.info(f"Trial {trial.number} intermediate values percentile for step {step} = {p:.4f}")
         if math.isnan(p):
             return False
 
         if direction == StudyDirection.MAXIMIZE:
-            return mean_intermediate_result < p
-        return mean_intermediate_result > p
+            return weighted_mean_intermediate_result < p
+        return weighted_mean_intermediate_result > p
 
 
 # == == == == == == == == == == == == == == == == == == == == #
