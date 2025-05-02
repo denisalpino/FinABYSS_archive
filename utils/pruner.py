@@ -141,7 +141,10 @@ class AdaptiveStablePercentilePruner(PercentilePruner):
         if math.isnan(weighted_mean_intermediate_result):
             return True
 
-        current_percentile = self._percentiles[step, min(trial.number - self._n_startup_trials, self._n_trials - 1)]
+        current_percentile = self._percentiles[
+            step - n_warmup_steps,
+            min(trial.number - self._n_startup_trials, self._n_trials - 1)
+        ]
 
         p = _get_percentile_intermediate_result_over_trials(
             completed_trials, direction, step, normalized_weights,
