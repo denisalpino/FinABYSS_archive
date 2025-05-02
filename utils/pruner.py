@@ -19,9 +19,9 @@ def _get_percentile_intermediate_result_over_trials(
     completed_trials: list["optuna.trial.FrozenTrial"],
     direction: StudyDirection,
     step: int,
+    steps_weights: list,
     percentile: float,
-    n_min_trials: int,
-    normalized_weights: list[float]
+    n_min_trials: int
 ) -> float:
     if len(completed_trials) == 0:
         raise ValueError("No trials have been completed.")
@@ -29,10 +29,11 @@ def _get_percentile_intermediate_result_over_trials(
     intermediate_values = []
     for t in completed_trials:
         if step in t.intermediate_values:
+            # Collect all intermediate values untill current step (inclusively for steps started from 1)
             intermediate_values_till_step = list(t.intermediate_values.values())[:step]
             weighted_average = 0
 
-            for val, weight in zip(intermediate_values_till_step, normalized_weights):
+            for val, weight in zip(intermediate_values_till_step, steps_weights):
                 weighted_average += weight * val
 
             intermediate_values.append(weighted_average)
@@ -68,16 +69,18 @@ def _is_first_in_interval_step(
 class AdaptiveStablePercentilePruner(PercentilePruner):
     def __init__(
         self,
-        percentile_range: list,
-        # percentile_weights: list,
+        percentiles: list[list],
         steps_weights: list,
-        n_trials: int,
         n_startup_trials: int = 5,
         n_warmup_steps: int = 0,
         interval_steps: int = 1,
         *,
         n_min_trials: int = 1,
     ) -> None:
+        """
+        percentiles starts work from `n_startup_trials + 1` trial, so there must be `n_trials - n_startup_trials` columns.
+        The shape of `prcentiles` must be `n_steps X n_trials`
+        """
         if n_startup_trials < 0:
             raise ValueError(
                 "Number of startup trials cannot be negative but got {}.".format(n_startup_trials)
@@ -95,8 +98,8 @@ class AdaptiveStablePercentilePruner(PercentilePruner):
                 "Number of trials for pruning must be at least 1 but got {}.".format(n_min_trials)
             )
 
-        self._percentiles = np.linspace(percentile_range[0], percentile_range[1], n_trials - n_startup_trials)
-        self._n_trials = n_trials
+        self._percentiles = np.asarray(percentiles)
+        self._n_trials = len(percentiles[0]) + n_startup_trials
         self._steps_weights = steps_weights
         self._n_startup_trials = n_startup_trials
         self._n_warmup_steps = n_warmup_steps
@@ -129,21 +132,23 @@ class AdaptiveStablePercentilePruner(PercentilePruner):
         direction = study.direction
 
         values = np.asarray(list(trial.intermediate_values.values()), dtype=float)
-        # Нормируем веса для шага
+        # Normalize weights untill step (inclusively for steps started from 1)
         weights = np.asarray(self._steps_weights[:step], dtype=float)
         normalized_weights = weights / np.sum(weights)
         weighted_mean_intermediate_result = np.average(values, weights=normalized_weights)
+        logger.info(f"Trial {trial.number} WEIGHTED CUMMULATIVE METRIC for step {step} = {weighted_mean_intermediate_result:.4f}")
 
-        logger.info(f"Trial {trial.number} weighted_mean_intermediate_result for step {step} = {weighted_mean_intermediate_result:.4f}")
         if math.isnan(weighted_mean_intermediate_result):
             return True
 
+        current_percentile = self._percentiles[step, min(trial.number, self._n_trials - self._n_startup_trials)]
+
         p = _get_percentile_intermediate_result_over_trials(
-            completed_trials, direction, step,
-            self._percentiles[min(trial.number, self._n_trials) - self._n_startup_trials], # переделать так, чтобы self._percentiles передавались пользователем
-            self._n_min_trials, normalized_weights
+            completed_trials, direction, step, normalized_weights,
+            current_percentile, self._n_min_trials,
         )
-        logger.info(f"Trial {trial.number} intermediate values percentile for step {step} = {p:.4f}")
+        logger.info(f"Trial {trial.number} TRESHOLD PERCENTILE for step {step} = {p:.4f}")
+
         if math.isnan(p):
             return False
 
