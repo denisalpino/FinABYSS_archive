@@ -143,7 +143,7 @@ class AdaptiveStablePercentilePruner(PercentilePruner):
 
         current_percentile = self._percentiles[
             step - n_warmup_steps,
-            min(trial.number - self._n_startup_trials, self._n_trials - 1)
+            min(trial.number, self._n_trials - 1) - self._n_startup_trials
         ]
 
         p = _get_percentile_intermediate_result_over_trials(
