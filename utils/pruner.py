@@ -8,7 +8,7 @@ import numpy as np
 from scipy import stats
 
 import optuna
-from optuna.pruners import PercentilePruner
+from optuna.pruners import PercentilePruner, PatientPruner
 from optuna.study._study_direction import StudyDirection
 from optuna.trial._state import TrialState
 from optuna.logging import _get_library_root_logger
@@ -158,6 +158,48 @@ class AdaptiveStablePercentilePruner(PercentilePruner):
         if direction == StudyDirection.MAXIMIZE:
             return weighted_mean_intermediate_result < p
         return weighted_mean_intermediate_result > p
+
+
+class CustomPatientPruner(PatientPruner):
+    def prune(self, study: "optuna.study.Study", trial: "optuna.trial.FrozenTrial") -> bool:
+        step = trial.last_step
+        if step is None:
+            return False
+
+        intermediate_values = trial.intermediate_values
+        steps = np.asarray(list(intermediate_values.keys()))
+
+        # Do not prune if number of step to determine are insufficient.
+        if steps.size < self._patience + 1:
+            return False
+
+        steps.sort()
+        # This is the score patience steps ago
+        step_before_patience = steps[-self._patience - 1]
+        score_before_patience = intermediate_values[step_before_patience]
+        # And these are the scores after that
+        steps_after_patience = steps[-self._patience:]
+        scores_after_patience = np.asarray(
+            list(intermediate_values[step] for step in steps_after_patience)
+        )
+
+        direction = study.direction
+        if direction == StudyDirection.MINIMIZE:
+            maybe_prune = score_before_patience - self._min_delta < np.nanmin(
+                scores_after_patience
+            )
+        else:
+            maybe_prune = score_before_patience + self._min_delta > np.nanmax(
+                scores_after_patience
+            )
+
+        if maybe_prune:
+            if self._wrapped_pruner is not None:
+                return self._wrapped_pruner.prune(study, trial)
+            else:
+                return True
+        else:
+            return False
 
 
 # == == == == == == == == == == == == == == == == == == == == #
