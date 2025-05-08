@@ -39,7 +39,7 @@ To ensure the corpus's versatility and facilitate subsequent use, the following 
 
 \begin{itemize}
     \item Headline (e.g., “Covestro board enters formal talks on \$12 billion ADNOC approach”);
-    \item Source (copyright holder), e.g., Reuters, Simply Wall St., PR Newswire;
+    \item Source (copyright holder), e.g., Reuters, Simply Wall St., PR Newswire, @ilyasut, Max Gottich;
     \item Publication platform, e.g., Twitter, Yahoo! Finance, Reddit, Seeking Alpha;
     \item UTC timestamp with second-level precision (e.g., 2024-09-01T01:48:13);
     \item Author-assigned topical tags (e.g., [“M\&A”, “Cryptocurrency”, “Tech”])'
@@ -96,7 +96,43 @@ to Yahoo! Finance, does not support the collection of historical data.
 
 \subsubsection{Data Collecting}
 \label{sec:data_collecting}
-<<...>>
+
+Prior to data collection, a survey and analysis of existing open-source tools for harvesting data from Yahoo! Finance were conducted.
+The analysis identified five candidate libraries. Two --- yahooquery and yahoo-stock-api --- do not support article extraction;
+two others --- yahoo\_fin and fin-news --- are abandoned and no longer function correctly; and yfinance affords access only
+to the latest twenty news items in real time. Consequently, a custom Python parser was developed. Its architecture comprises
+two principal stages:
+
+\begin{enumerate}
+    \item Link Collection. A recursive traversal of the official sitemap is used to gather article URLs for a specified
+    period. Each “daily page” lists 50 news links and a pointer to the next page; critically, page $n$ can only be accessed
+    via page $n - 1$, creating a bottleneck akin to traversing a linked list under high network latency.
+    \item Content Extraction. The gathered URLs are then parsed to extract each article's text. It should be noted that,
+    as with training the original BERT model, tables and images are not processed \parencite{devlin2019BERT}.
+\end{enumerate}
+
+During development, several constraints were encountered and subsequently addressed in the parser's design:
+
+\begin{itemize}
+    \item IP-blocking and Cookies. Yahoo! Finance limits to 14 concurrent requests per IP at minimum 4-second intervals;
+    violations yield HTTP 404, 429, or 200 responses with empty bodies. Even when these constraints are met, blocks may
+    still occur. To mitigate this, a pool of 50 proxy servers was employed, and failed requests were automatically retried
+    in subsequent iterations.
+    \item Regional Restrictions. Identical URLs may be inaccessible or behave inconsistently when requested from different
+    countries.
+    \item Technical Errors. Redirects to external sources, broken links, and paywalled URLs were encountered and excluded
+    during corpus assembly.
+\end{itemize}
+
+To accelerate processing of large datasets, the C-based library selectolax was used, offering roughly 30x the speed
+of BeautifulSoup and 5x that of lxml.
+
+As a result, the link-collection stage yielded 1,362,103 URLs, of which 1,360,761 belonged to the Yahoo! Finance domain.
+Thanks to the parser's modular architecture, extensive proxy usage, and multiple iterations, 1,304,717 articles were
+successfully parsed. The final corpus occupies 6.5 GB in CSV format and 2.2 GB in the more compact Parquet format.
+
+The final class implementing the parser program can be found in the official repository of the project, called
+YahooFinanceParser\footnote{URL: \url{https://github.com/denisalpino/FinABYSS}}.
 
 \subsubsection{Data Analysis}
 \label{sec:data_analysis}
