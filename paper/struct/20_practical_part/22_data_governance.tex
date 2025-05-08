@@ -1,10 +1,105 @@
-\subsubsection{Selection of Information Resources}
-<<...>>
+\subsubsection{Data Requirements}
+\label{sec:data_req}
+One of the study's key objectives was data collection. As noted, the corpus was constructed to meet requirements
+for universality and to support future research in related fields.
+
+\textbf{Data Requirements.} Texts were chosen as the primary source of qualitative data. In the financial domain,
+the most content-rich and impactful on asset prices are:
+
+\begin{itemize}
+    \item news articles;
+    \item social-media posts;
+    \item official reports (annual, quarterly, strategic);
+    \item press releases;
+    \item analytical reviews and articles;
+    \item transcripts of interviews, conferences, and public-company webcasts.
+\end{itemize}
+
+Previous studies have validated the effectiveness of these text types. FinBERT \parencite{Yang2020FinBERT,Huang2023FinBERT},
+for example, was trained on official reports and analytical articles, and its later versions incorporated press releases
+\parencite{Liu2020FinBERT}. Other models have been successfully pre-trained on fragmented news articles and fine-tuned
+for sentiment analysis on news headlines and social-media publications \parencite{Araci2019FinBERT}. Nevertheless,
+our research deliberately processes full texts without fragmentation: official reports frequently exceed the 8,192
+token limit of ModernBERT, complicating their integration, while very short formats (social-media posts) fail
+to exploit the advantages of a long-context model.
+
+Furthermore, no single source aggregates all of the above text types. Given limited resources, the following most
+significant categories were selected for initial focus:
+
+\begin{itemize}
+    \item news articles;
+    \item press releases;
+    \item analytical reviews and articles;
+    \item transcripts of financial events.
+\end{itemize}
+
+Expansion of the corpus to include additional content categories is planned for future work.
+
+To ensure the corpus's versatility and facilitate subsequent use, the following metadata were collected for each text:
+
+\begin{itemize}
+    \item Headline (e.g., “Covestro board enters formal talks on \$12 billion ADNOC approach”);
+    \item Source (copyright holder), e.g., Reuters, Simply Wall St., PR Newswire;
+    \item Publication platform, e.g., Twitter, Yahoo! Finance, Reddit, Seeking Alpha;
+    \item UTC timestamp with second-level precision (e.g., 2024-09-01T01:48:13);
+    \item Author-assigned topical tags (e.g., [“M\&A”, “Cryptocurrency”, “Tech”])'
+    \item List of tickers mentioned by the author (e.g., [“9626.HK”, “BILI”]).
+\end{itemize}
+
+Finally, the optimal period for data collection was established. The lower and upper bounds of the dates were selected
+based on the assumption that this corpus will be used to train the value prediction model in the future, which requires
+that the initial knowledge of ModernBERT be synchronized with those on which it will be fine-tuned later. Due to the fact
+that the ModernBERT publication does not disclose the data on which the model was trained \parencite{Warner2024ModernBERT},
+it is impossible to accurately judge for which period the data was taken. Therefore, in our study, focusing
+on the date of ModernBERT publication \parencite{Warner2024ModernBERT} and the classical ratio of training,
+validation and test samples as 75/15/10, we took the date range from September 17, 2023 to March 18, 2025, i.e. 548 days,
+of which 374 are working days according to the US calendar.
+
+\textbf{Source Requirements.} Data sources must be open, free, English-language, and authoritative, since wide
+dissemination and timely publication directly affect market reactions. Considered sources included:
+
+\begin{itemize}
+    \item News outlets: Bloomberg\footnote{URL: \url{https://www.bloomberg.com/}},
+    The New York Times\footnote{URL: \url{https://www.nytimes.com/}},
+    Reuters\footnote{URL: \url{https://www.reuters.com/}}, etc;
+    \item Analytical platforms: Seeking Alpha\footnote{URL: \url{https://seekingalpha.com/}},
+    TradingView\footnote{URL: \url{https://tradingview.com/}};
+    \item Official sites: Corporate and government portals.
+\end{itemize}
+
+An analysis of over 50 corporate and more than 100 government resources showed that, thanks to RSS feeds, press
+releases are centrally aggregated via PR Newswire\footnote{URL: \url{https://www.cision.com/}} and
+GlobeNewswire\footnote{URL: \url{https://www.globenewswire.com/}}. Other automated aggregators
+(e.g., Business Wire\footnote{URL: \url{https://www.businesswire.com/}}) exist, but PR Newswire and GlobeNewswire
+empirically dominate; however, they offer press releases only, without genre diversity.
+
+Among news outlets, Reuters proved optimal in responsiveness and market coverage. Niche but high-quality sources
+(e.g., The Information\footnote{URL: \url{https://www.theinformation.com/}}, Epoch AI\footnote{URL: \url{https://epoch.ai/}})
+were also examined; they provide overly specialized content, whereas traditional outlets
+such as Bloomberg, The Wall Street Journal\footnote{URL: \url{https://www.wsj.com/}},
+and The Economist\footnote{URL: \url{https://www.economist.com/}} cover a broader market spectrum, albeit with
+technical constraints.
+
+Of the analytical platforms, Seeking Alpha was excluded due to its large volume of paywalled content, and TradingView
+was unsuitable because it does not grant access to historical publications.
+
+Thus, PR Newswire and Reuters became the corpus's primary sources. To mitigate the risk of systematic bias and ensure
+broader coverage, it was nevertheless decided to enrich the corpus with additional publishers. Due to their fragmentation,
+lack of APIs, and often incomplete metadata (including sub-second timestamps), aggregation and synchronization proved
+unfeasible. Consequently, the aggregators Google Finance\footnote{URL: \url{https://www.google.com/finance/}},
+Yahoo! Finance\footnote{URL: \url{https://finance.yahoo.com/}},
+and FinURLs\footnote{URL: \url{https://finurls.com/}} were also considered.
+
+Ultimately, Yahoo! Finance was selected thanks to its unified site structure and comprehensive aggregation of diverse
+sources, whereas FinURLs redirects to individual source sites, each with its own layout. Google Finance, though similar
+to Yahoo! Finance, does not support the collection of historical data.
 
 \subsubsection{Data Collecting}
+\label{sec:data_collecting}
 <<...>>
 
 \subsubsection{Data Analysis}
+\label{sec:data_analysis}
 Before commencing the pre-processing stage, it was decided to conduct a comprehensive analysis of the collected corpus of news articles.
 This preliminary analysis not only revealed the characteristic features of the data but also established the foundation for subsequent
 automation of text cleaning and structuring. Moreover, the analysis results have also impacted the quality of the trained model.
@@ -13,7 +108,7 @@ automation of text cleaning and structuring. Moreover, the analysis results have
 of non-representative or "noisy" articles. In this process, key signals—such as specific keywords in the titles and opening paragraphs—were
 identified that allow for the automatic filtering out of undesirable texts. Furthermore, the local investigation uncovered potential
 rules for removing marketing fragments, metadata, and other artifacts that adversely affect data quality.
-All the obtained rules were subsequently formalized (see section 2.2.4 for further details).
+All the obtained rules were subsequently formalized (see \hyperref[sec:data_prep]{Section 2.2.4} for further details).
 
 \textbf{Global analysis} is dedicated to studying the central tendencies of the corpus through descriptive statistics and the analysis
 of various data representations—both metadata and the textual content itself. This approach enabled the evaluation of the distribution
@@ -41,7 +136,7 @@ on weekends and holidays, business activity declines, leading to fewer publicati
     \caption{\label{fig:dist_by_dates_tail}Distribution of publications by dates (tail).}
 \end{figure}
 
-At the same time, some articles, by formal characteristics, fall outside the collection period (September 1, 2023 – March 18, 2025).
+At the same time, some articles, by formal characteristics, fall outside the collection period (September 17, 2023 - March 18, 2025).
 Figure \ref{fig:dist_by_dates_tail} displays these "tail" publications, whose count slightly exceeds 200. A more detailed analysis
 determined that these articles were indeed published within the specified interval, but their content was later edited or supplemented.
 As a result, the publication date and time on the corresponding website were updated, and the old version (with the original date) was
@@ -78,8 +173,8 @@ for training a language model because:
 \end{enumerate}
 
 Nevertheless, even "imperfect" texts from aggregators convey useful information about the financial market and companies. However,
-it is extremely important to develop appropriate cleaning and pre-processing rules (discussed in detail in section 2.2.4) to preserve
-the semantic integrity of the texts.
+it is extremely important to develop appropriate cleaning and pre-processing rules (discussed in detail in \hyperref[sec:data_prep]{Section 2.2.4})
+to preserve the semantic integrity of the texts.
 
 Furthermore, and perhaps more importantly, these semi-automated texts contribute roughly the same total number of tokens
 as the "original" articles (30.8\%), despite their numerical dominance. Consequently, with proper processing, this group of semi-automated
@@ -139,7 +234,5 @@ of the text, these issues do not have a critical impact. Proper pre-processing, 
 elements, will substantially improve the quality of the trained model and expand its ability to generalize across various types of publications.
 
 \subsubsection{Data Preprocessing}
-<<...>>
-
-\subsubsection{Retrieval of Embeddings}
+\label{sec:data_prep}
 <<...>>
