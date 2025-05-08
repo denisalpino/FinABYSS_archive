@@ -74,13 +74,13 @@ FinABYSS (Financial Aspect-Based Hybrid Semantic System)
 # Notes
 ## Future works
 | Task                                                                           | Complexity | Priority | Current Status | Finished  |
-|------------------------------------------------------|------------|----------|----------------|-----------|
-| Additional Corpus Cleaning                                                     | Easy       | High     | in progress    | &#x2611; Formalize rules
-| Improve c-TF-IDF implementation                                                | Easy       | High     | in progress    | &#x2610; Configure MinimalMarginalRate from KeyBERT
+|--------------------------------------------------------------------------------|------------|----------|----------------|-----------|
+| Additional Corpus Cleaning                                                     | Easy       | High     | done           | &#x2611; Formalize rules
+| Improve c-TF-IDF implementation                                                | Easy       | High     | done           | &#x2611; Configure MinimalMarginalRate from KeyBERT
 | Improve Representation of Topics                                               | Normal     | High     | in progress    | &#x2610; Plug in the GPT-4o<br>&#x2610; Figure out how to account for the hierarchical structure
-| Develop Hierarchical Structure Processing Logic Inspiring by BERTopic          | Normal     | Medium   | planning       | &#x2610; Explore the BERTopic source code<br>&#x2610; Develop logic for assigning topic names to each level in the hierarchy
+| Develop Hierarchical Structure Processing Logic Inspiring by BERTopic          | Normal     | Medium   | in progress    | &#x2610; Explore the BERTopic source code<br>&#x2610; Develop logic for assigning topic names to each level in the hierarchy
 | Full-body Training                                                             | Normal     | High     | in progress    | &#x2610; Find and rent infrastructure with GPUs<br>&#x2610; Customize the environment<br>&#x2610; Adapt training code
-| ModernBERT Domain Adaptive Pre-Training                                        | Normal     | High     | planning       | &#x2610; (optional) Expand the corpus<br>&#x2610; Find and rent infrastructure with GPUs<br>&#x2610; Write training code
+| ModernBERT Domain Adaptive Pre-Training                                        | Hard       | High     | planning       | &#x2610; (optional) Expand the corpus<br>&#x2610; Find and rent infrastructure with GPUs<br>&#x2610; Write training code
 | Evaluate and Compare ModernBERT & FinBERT (DAPT) on GLUE & FLUE benchmarks     | Hard       | High     | planning       | &#x2610; Find and gather all datasets from benchmarks<br>&#x2610; Write code to fine-tune for each of the tasks
 | Refine the Semantic Map                                                        | Normal     | Medium   | planning       | &#x2610; Rework hover labels<br>&#x2610; Write custom code to build a word cloud using the native TF-IDF<br>&#x2610; Implement filtering by source<br>&#x2610; Improve the visual design<br>&#x2610; Develop more diverse infographics
 | Refine the Text Search in the Semantic Map                                     | Normal     | Low      | planning       | &#x2610; Create the database for texts<br>&#x2610; Remove the texts from hover labels and migrate them into the database<br>&#x2610; Connect search system in the semantic map wit database
