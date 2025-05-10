@@ -1,0 +1,160 @@
+\subsubsection{Feature Extraction}
+After preprocessing the text corpus and removing background noise, embeddings were extracted
+to accelerate subsequent stages of topic modeling, including dimensionality reduction and clustering.
+
+The base ModernBERT model is not optimal for this task, since its vector representations are excessively
+sparse. High sparsity of embeddings degrades clustering quality, particularly for density-based methods
+(e.g., DBSCAN). Although HDBSCAN is more robust to density variations, sparsity still adversely affects
+clustering outcomes.
+
+To address this issue, it is common to fine-tune the model on a semantic textual similarity (STS) task.
+In this setting, the model receives a pair of texts and returns a similarity score \parencite{MTEB2023},
+typically computed via cosine distance (Formulation \ref{eq:cos_dist}).
+
+\begin{equation}\label{eq:cos_dist}
+    D_{\cos}(\mathbf{u}, \mathbf{v})
+    = 1 - \frac{\mathbf{u} \cdot \mathbf{v}}
+                 {\|\mathbf{u}\|_2 \,\|\mathbf{v}\|_2}.
+\end{equation}
+
+STS models consistently produce denser and more informative embeddings.
+
+Accordingly, for the base ModernBERT we evaluated two fine-tuned variants: modernbert-embed from Nomic AI
+\parencite{nomic2024} and gte-modernbert-base from Alibaba \parencite{MGTE2023,MGTE2024}. Evaluation
+employed the Massive Text Embedding Benchmark (MTEB), which spans eight task categories and 58 datasets
+\parencite{MTEB2023}. Results were as follows:
+
+\begin{itemize}
+    \item Clustering (12 datasets): gte-modernbert-base outperformed modernbert-embed by 1.5 percentage
+    points (44.98\% vs. 44.47\%).
+    \item STS (10 datasets): Their performances were comparable (81.78\% vs. 81.57\%).
+    \item Overall (eight tasks, 56 datasets): gte-modernbert-base led by 1.76 percentage points on average
+    (64.38\% vs. 62.62\%).
+\end{itemize}
+
+Consequently, gte-modernbert-base from the sentence\_transformers library was chosen for embedding extraction
+\parencite{SBERT2019}. Instead of using the [CLS] token, a more advanced Mean Pooling technique was applied,
+averaging token embeddings across the sequence (Formulation \ref{eq:mean_pooling}).
+
+\begin{equation}\label{eq:mean_pooling}
+    \mathbf{h_{mean}}=\frac{1}{T}\sum^T_{t=1}\mathbf{h}_{t}.
+\end{equation}
+
+where $T$ is the tokenized sequence length and $\mathbf{h}_t$ denotes the embedding of the $t$-th token.
+
+To accelerate the training of dimensionality reduction and clustering models, the embeddings were
+first reduced to the unit $L_2$-norm (Formulation \ref{eq:l2_norm}):
+
+\begin{equation}\label{eq:l2_norm}
+    \widehat{\mathbf{u}}
+    = \frac{\mathbf{u}}{\|\mathbf{u}\|_2},
+    \qquad
+    \|\mathbf{u}\|_2 = \sqrt{\sum_{i=1}^{n} u_i^2}.
+\end{equation}
+
+Such preprocessing allows us to use the GPU-optimized Euclidean distance metric (Equation \ref{eq:euclidean})
+when training the dimensionality reduction model, without having to repeat the $L_2$-norm computation that
+occurs when computing the cosine distance metric at each iteration of the hyperparameter optimization.
+so that Euclidean distance could be used for both dimensionality reduction and clustering.
+
+\begin{equation}\label{eq:euclidean}
+    D_{2}(\mathbf{u}, \mathbf{v})
+    = \|\mathbf{u} - \mathbf{v}\|_2
+    = \sqrt{\sum_{i=1}^{n} \bigl(u_i - v_i\bigr)^2}.
+\end{equation}
+
+Thus, after computing the $L_2$-norm and the Euclidean distance, we can actually, in a sense, be considered
+to be working with the cosine distance, since the reduced measure becomes monotonically related to the cosine
+and reflects the same order of proximity of the points (Equation \ref{eq:euclidean_after_l2_norm}), but all
+computations are accelerated by GPU optimization.
+
+\begin{equation}\label{eq:euclidean_after_l2_norm}
+    D_{2}\bigl(\widehat{\mathbf{u}}, \widehat{\mathbf{v}}\bigr)
+    = \bigl\|\widehat{\mathbf{u}} - \widehat{\mathbf{v}}\bigr\|_2
+    = \sqrt{2\,\bigl(1 - \widehat{\mathbf{u}}\!\cdot\!\widehat{\mathbf{v}}\bigr)}.
+\end{equation}
+
+To build and train the dimensionality reduction and clustering algorithms, a training subsample of 200,000 embeddings
+and associated metadata was generated, which is approximately 16\% of the entire corpus. This size of the training
+subsample was chosen based on the available computational resources. Thus, 200,000 embeddings were used to select
+the optimal hyperparameters, while the remaining 1,050,000 embeddings were reserved for the validation and inference
+phases. At the same time, before inference, the pipeline of dimensionality reduction and clustering models were trained
+on the entire corpus with a linear increase in hyperparameter values for the HDBSCAN algorithm, the choice of which
+is conditioned in \hyperref[sec:drc]{Section 2.3.2}.
+
+Moreover, mixed precision (float16) and the FlashAttention mechanism \parencite{flash2022attention} were
+employed during embedding extraction, substantially reducing computational resource requirements and runtime.
+
+\subsubsection{Dimensionality Reduction and Clustering}
+\label{sec:drc}
+Thus, after assembling the embedding sample, we proceeded to experiments with dimensionality reduction and clustering
+models, performing their joint optimization. This approach reflects the multi-criteria nature of the task: it is necessary
+not only to preserve the structural (global) and local relationships from the original 768-dimensional space, but also
+to ensure that embeddings remain separable (“clusterable”) in a low-dimensional projection suitable for two-dimensional
+visualization.
+
+As key requirements we identified:
+
+\begin{enumerate}
+    \item Preservation of cluster structure. Embeddings after dimensionality reduction must remain separable,
+    preserving groupings by semantic and topical similarity.
+    \item Suitability for two-dimensional visualization. The resulting space must support clear and interpretable
+    planar display.
+\end{enumerate}
+
+To search simultaneously for optimal hyperparameters of both dimensionality reduction algorithms and clustering methods,
+we employed a unified meta-optimization process.
+
+We used the DBCV index as our optimization metric, since it does not assume any predefined cluster shape (unlike as example
+silhouette coefficient favoring spherical or ellipsoidal structures) and effectively evaluates density-based clustering
+methods.
+
+As our base clustering algorithm we selected HDBSCAN \parencite{HDBSCAN2013}, which meets two crucial requirements:
+
+\begin{itemize}
+    \item No shape assumptions. Unlike K-Means, HDBSCAN does not assume clusters are Gaussian spheres, which is critical
+    for representing topics.
+    \item Hierarchical, density-based nature. It can identify both large thematic groups and small, highly concentrated niches.
+\end{itemize}
+
+Moreover, GPU acceleration of HDBSCAN yielded high processing speed on both large samples and high-dimensional data.
+
+Within the HDBSCAN framework, we tuned two key hyperparameters: the minimum number of neighbors --- the count of points
+in a neighborhood required to consider a point a cluster “core” --- and the minimum cluster size --- the threshold number
+of observations for forming a cluster, which allows capturing rare, narrowly topical groups.
+
+Pilot experiments revealed the coexistence of very dense regions (“hot topics”) and rare but semantically significant
+clusters. A small minimum cluster size captures these rare topics but also increases the number of micro-clusters,
+some of which lack clear semantic distinction.
+
+To mitigate this, we considered an $\epsilon$-based cluster-merging technique \parencite{HDBSCAN2020cluster_selection_epsilon},
+consolidating adjacent micro-clusters in high-density regions. However, this approach complicates inference: when new
+observations arrive, $\epsilon$-merging cannot be incrementally updated, necessitating full retraining.
+
+Prioritizing practicality, we therefore abandoned $\epsilon$-merging in favor of smaller minimum cluster sizes, accepting
+some fragmentation while preserving the ability to interpret and agglomerate clusters at higher hierarchical levels.
+
+Another hyperparameter --- the cluster selection method --- determines whether clusters form based on excess of mass
+or tree leaves. We found that the latter yields finer-grained, more homogeneous groups, and used it for our final
+configuration.
+
+Thus, in the final optimization stage, only two HDBSCAN parameters remained tunable: minimum neighbors and minimum cluster
+size.
+
+It is noteworthy that, as will be described in \hyperref[sec:architecture]{Section 3.3}, the future architecture assumes
+a fixed number of clusters corresponding to a static number of experts; hence, we employ the cuML implementation of HDBSCAN
+rather than its adaptive variant \parencite{HDBSCAN2022adaptive}.
+
+Turning to dimensionality reduction algorithms, our preliminary selection included t-SNE, PCA, UMAP, TriMap, and PaCMAP,
+with key evaluation criteria of fidelity, the ability to balance local and global relationships, and training time complexity.
+Based on other researchers' experience, UMAP was chosen as the baseline algorithm \parencite{BERTopic2022}.
+
+t-SNE was excluded due to its insufficient scalability on large datasets. PCA, although fast as a global approximation,
+did not preserve local structure in the final low-dimensional embedding, and an experiment combining PCA with UMAP fell
+short of standalone UMAP by approximately 37\% in DBCV score. While TriMap and PaCMAP achieved similar performance
+in intermediate dimensions --- and PaCMAP produced a more uniform distribution for two-dimensional visualization ---
+the GPU-accelerated implementation and demonstrated robustness of UMAP in cuML led us to select it as the definitive method
+for both intermediate dimensionality reduction and final 2D projection.
+
+\subsubsection{Hyperparameters Optimization}
+<<To be done later>>
