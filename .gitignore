@@ -25,6 +25,7 @@ paper/main.synctex.gz
 
 # Data files
 *.sqlite3
+*.npy
 batch_*.parquet
 articles.parquet
 failed.parquet
