@@ -1,3 +1,5 @@
+![logo](docs/finabyss_dark.svg)
+
 FinABYSS (Financial Aspect-Based Hybrid Semantic System)
 ---
 - [Functionality](#functionality)
