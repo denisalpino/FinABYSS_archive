@@ -79,7 +79,7 @@ FinABYSS (Financial Aspect-Based Hybrid Semantic System)
 |--------------------------------------------------------------------------------|------------|----------|----------------|-----------|
 | Additional Corpus Cleaning                                                     | Easy       | High     | done           | &#x2611; Formalize rules
 | Improve c-TF-IDF implementation                                                | Easy       | High     | done           | &#x2611; Configure MinimalMarginalRate from KeyBERT
-| Improve Representation of Topics                                               | Normal     | High     | in progress    | &#x2611; Plug in the GPT-4o<br>&#x2611; Figure out how to account for the hierarchical structure
+| Improve Representation of Topics                                               | Normal     | High     | done           | &#x2611; Plug in the GPT-4o<br>&#x2611; Figure out how to account for the hierarchical structure
 | Develop Hierarchical Structure Processing Logic Inspiring by BERTopic          | Normal     | Medium   | in progress    | &#x2610; Explore the BERTopic source code<br>&#x2610; Develop logic for assigning topic names to each level in the hierarchy
 | Full-body Training                                                             | Normal     | High     | done           | &#x2611; Find and rent infrastructure with GPUs<br>&#x2611; Customize the environment<br>&#x2611; Adapt training code
 | ModernBERT Domain Adaptive Pre-Training                                        | Hard       | High     | planning       | &#x2610; (optional) Expand the corpus<br>&#x2610; Find and rent infrastructure with GPUs<br>&#x2610; Write training code
