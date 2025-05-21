@@ -1,0 +1,14 @@
+\begin{longtable}[c]{|l|lll|}
+    \caption{Description of the final configurations of experiments conducted on a subsample of 10,000 embeddings.}
+    \label{tab:experiment_configs}\\
+    \hline
+    \multicolumn{1}{|c|}{\multirow{2}{*}{\textbf{Model}}} & \multicolumn{3}{c|}{\textbf{Configuration}}                                                                    \\ \cline{2-4}
+    \multicolumn{1}{|c|}{}                                 & \multicolumn{1}{c|}{(I)}               & \multicolumn{1}{c|}{(II)}                & \multicolumn{1}{c|}{(III)} \\ \hline
+    \endfirsthead
+
+    \endhead
+
+    ModernBERT                                             & \multicolumn{1}{l|}{Fine-tuned on STS} & \multicolumn{1}{l|}{General pre-trained} & Fine-tuned on STS          \\
+    UMAP    & \multicolumn{1}{l|}{$L_2$-Euclidean} & \multicolumn{1}{l|}{Cosine}    & Cosine    \\
+    HDBSCAN & \multicolumn{1}{l|}{$L_2$-Euclidean} & \multicolumn{1}{l|}{Euclidean} & Euclidean \\ \hline
+\end{longtable}

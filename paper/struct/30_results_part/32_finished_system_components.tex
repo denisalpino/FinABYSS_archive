@@ -18,19 +18,24 @@ to the DBCV property of taking into account density features and heterogeneity o
 distribution, hyperparameters selected for DBCV provided more semantically consistent and dense
 clusters.
 
-Finally, we tested the finely tuned STS version of ModernBERT ("gte-modernbert-base")
-\parencite{MGTE2024} in combination with UMAP, but with $L_2$-Euclidean
-metric, and the same HDBSCAN, also configured for $L_2$-Euclidean distance. However, this
-combination was inferior to the previous one: the DBCV index was only 0.405 against 0.476
-for the cosine + euclidean pair.
+Finally, we tested base generally pre-trained and the fine-tuned STS version of ModernBERT
+("gte-modernbert-base") \parencite{MGTE2024} in combination with UMAP, with cosine and
+$L_2$-Euclidean metric, and the same HDBSCAN, also configured for euclidean and $L_2$-Euclidean
+distance (Table \ref{tab:experiment_configs}). However, this combination was inferior
+to the previous one: the DBCV index was only 0.4032 against 0.4763 for the cosine + euclidean pair
+(Table \ref{tab:experiment_results}).
 
-Additional analysis of the noise points and cluster structure confirmed this advantage. When using
-the $L_2$-Euclidean metric, the proportion of noise points reached 42.16\%, and the number
-of clusters was 97 (with a maximum size of 3,220 points and a minimum size of 260).
-For the cosine + euclidean pair, the noise was only 36.18\%, and the number of clusters increased
-to 162; at the same time, the maximum cluster increased to 3,742 points, and the minimum decreased
-to 109. Thus, the "cosine + euclidean" approach demonstrated a better ratio of cluster density
-and separability.
+\input{tab/experiment_configs.tex}
+
+Additional analysis of the noise points and cluster structure confirmed this advantage
+(Table \ref{tab:experiment_results}). When using the $L_2$-Euclidean metric, the proportion
+of noise points reached 42.16\%, and the number of clusters was 97 (with a maximum size
+of 3,220 points and a minimum size of 260). For the cosine + euclidean pair, the noise was
+only 36.18\%, and the number of clusters increased to 162; at the same time, the maximum
+cluster increased to 3,742 points, and the minimum decreased to 109. Thus, the "cosine +
+euclidean" approach demonstrated a better ratio of cluster density and separability.
+
+\input{tab/experiment_results.tex}
 
 The experimental results clearly indicate the superiority of the ModernBERT + UMAP scheme with cosine
 metric and HDBSCAN with Euclidean distance in the tasks of topical clustering of financial texts.
