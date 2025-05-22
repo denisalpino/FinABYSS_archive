@@ -271,4 +271,53 @@ elements, will substantially improve the quality of the trained model and expand
 
 \subsubsection{Data Preprocessing}
 \label{sec:data_prep}
-<<...>>
+After local and global analyses of the text data, which revealed both noise patterns within individual documents and system anomalies
+indicating the unrepresentativeness of some publications in the corpus as a whole, a multi-stage streaming on-the-fly preprocessing
+pipeline was designed using chunks of 100,000 publications. A key limitation in the development of the solution was the limited
+memory: with the original corpus size of about 15 GB, standard filtering and full text traversal operations required the allocation
+of a significant constant memory buffer. This necessitated adapting the algorithm to stream processing in fixed-size chunks.
+
+During the first stage, each chunk was downloaded from the repository and immediately subjected to initial filtering: documents
+containing less than 100 characters were rejected as insufficiently informative. The empirically set threshold of 100 characters
+turned out to be sufficient to eliminate “empty” artifacts arising due to markup instability on the source side. For example,
+on popular sites like Yahoo! Finance, text is sometimes stitched inside atypical HTML tags — for example, in '<tbody>' instead
+of the familiar '<p>' — resulting in almost entirely whitespace entries or marketing inserts at the end of the document.
+
+The next step was to implement a headline filter: 66 rules were formalized based on it, covering both generic patterns ('Form 8',
+'Net Asset Value', 'Holdings in company') and more targeted for noisy 12 sources (for example, GlobeNewswire removed headlines
+containing 'Declaration' or starting with 'Key digital'). This selection ensured the removal of publications consisting
+predominantly of tabular data or short fillers.
+
+After normalizing all kinds of whitespace - merging consecutive spaces or line breaks into a single character, replacing unbroken
+spaces '\\xa0' with a standard space, and unifying special characters in the text — 12 more rules were applied to reject
+unrepresentative documents based on the content of the main body of the publication. In particular, anything starting with
+the “(Repeat)” marker, as well as welcome templates of specific sources like “Dear madam, sir, please find hereunder the links”
+for GlobeNewswire, were automatically excluded from further processing.
+
+Next, the text was cleaned of contact information and typical footers: links, email addresses, and phrases that clearly indicate
+the end of the document (“Forward-looking statements”, “Contact Details”) or the unrepresentativeness of a paragraph (“Source:”,
+“See More:”, “Sponsored:”). In addition, standard introductory phrases such as “The recommendations of Wall Street analysts” and
+“When deciding whether to buy, sell, or hold a stock, investors often rely on analyst recommendations” were removed from
+the beginning of publications. A total of 92 cleaning rules were generated across the different groups.
+
+This aggressive cleaning of texts is due to the fact that filtered patterns are so frequent that they have an extremely negative
+impact on clustering, artificially inflating the clustering metric. After the aggressive cleaning of the corpus, the quality metric
+did decrease, but the clusters became much more representative and based on the semantics of the news itself rather than its
+sources, marketing and legal information in the texts.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{img/prep_wordcloud.png}
+    \caption{\label{fig:prep_wordcloud} Wordcloud of the whole collected corpus after text and documents preprocessing.}
+\end{figure}
+
+As a validation of the quality of text cleaning, we can refer to the word cloud of the corpus after preprocessing
+(Figure \ref{fig:prep_wordcloud}), which clearly shows the improvement: words such as 'forwardlooking', 'link', 'click', 'simply'
+(source name Simply Wall St.) and others are missing.
+
+Finally, before saving the chunks, sorting by publication date and deleting duplicates based on the full text of the document
+took place. Taking into account the described operations, the size of the corpus was reduced from 15.4 GB in CSV format (8.6 GB
+in Parquet) to 5.9 GB (2.0 GB in Parquet): out of 1,304,717 original records, 1,267,416 remained, i.e., only 2.8\%
+of the documents were deleted. This result indicates a high proportion of text noise in the collected dataset and emphasizes
+the effectiveness of the multi-stage stream-based preprocessing approach, which saves RAM and provides high-quality cleaning
+of text data before subsequent stages of thematic modeling and analysis.
