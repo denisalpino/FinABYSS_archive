@@ -18,12 +18,12 @@ to the DBCV property of taking into account density features and heterogeneity o
 distribution, hyperparameters selected for DBCV provided more semantically consistent and dense
 clusters.
 
-Finally, we tested base generally pre-trained and the fine-tuned STS version of ModernBERT
-("gte-modernbert-base") \parencite{MGTE2024} in combination with UMAP, with cosine and
-$L_2$-Euclidean metric, and the same HDBSCAN, also configured for euclidean and $L_2$-Euclidean
-distance (Table \ref{tab:experiment_configs}). However, this combination was inferior
-to the previous one: the DBCV index was only 0.4032 against 0.4763 for the cosine + euclidean pair
-(Table \ref{tab:experiment_results}).
+Finally, we tested base generally pre-trained \parencite{Warner2024ModernBERT} and
+the fine-tuned STS ("gte-modernbert-base") versions of ModernBERT \parencite{MGTE2024}
+in combination with UMAP, with cosine and $L_2$-Euclidean metric, and the same HDBSCAN,
+also configured for euclidean and $L_2$-Euclidean distance (Table \ref{tab:experiment_configs}).
+However, this combination was inferior to the previous one: the DBCV index was only 0.4032
+against 0.4763 for the cosine + euclidean pair (Table \ref{tab:experiment_results}).
 
 \input{tab/experiment_configs.tex}
 
