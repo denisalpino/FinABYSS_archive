@@ -113,9 +113,9 @@ in the analysis of market processes.
 
 In addition to the Semantic Map, FinABYSS provides powerful tools for analyzing the linguistic features
 of formed thematic groups and dynamic temporal modeling of topics. All incoming texts go through
-the post-processing pipeline described in Section 2.4 in the context of the Analytical GUI (see Section 3.1.6),
-where each document is assigned a prevailing theme, and then the corresponding lexical features are extracted
-and aggregated.
+the post-processing pipeline described in \hyperref[sec:sys_dev]{Section 2.4} in the context of the Analytical GUI
+(see \hyperref[sec:gui]{Section 3.1.6}), where each document is assigned a prevailing theme, and
+then the corresponding lexical features are extracted and aggregated.
 
 Thus, the system visualizes the frequency distribution of the most relevant words within the selected topic
 (Figure \ref{fig:topics_words_freqs}). This linguistic panel serves two purposes:
@@ -207,6 +207,22 @@ signals on the dynamics of financial assets.
 
 \subsubsection{Practical Importance}
 
+To summarize, it is worth emphasizing that the FinABYSS system is not just a set of models, but a full-fledged
+tool for rapid detection of critical signals in financial markets. Semantic map, deep topical clustering
+and news time series allow financial analysts to instantly react to unexpected events, reduce risks
+and profit.
+
+Thus, looking solely at the functionality of the Semantic Map, one can find several critical events that were
+immediately reflected in the “Legal case” thematic cluster in a timely manner after they hit the web.
+
+The first illustrative example (Figure \ref{fig:citi_group}) demonstrates how an article dated May 22, 2024
+affected the stock price of the target company. This news highlighted the scandal of the collapse of the value
+of European stocks due to insufficient control over trading operations by one of the 4 largest banks
+in the world --- Citi Group (C.NYSE) --- whose shares are traded on the New York Stock Exchange. After this news,
+which also announced the imposition of a record fine on the bank by the British government, the company's shares
+fell almost 4\% over the next 28 hours. Over the next 23 days, as litigation, additional reports and delayed
+market reaction took place, the price fell nearly 10\%.
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\linewidth]{img/citi_group.png}
@@ -216,7 +232,17 @@ signals on the dynamics of financial assets.
     \label{fig:citi_group}
 \end{figure}
 
-<<To be done later>>
+The Reuters news article itself signaled a sell signal, while the Figure \ref{fig:citi_group} clearly shows
+a tipping point with a sharp drop in price, a small pullback and a further change in the global trend for almost
+a month.
+
+Without FinABYSS, such signals are often lost in the news flow, while the developed system simplifies the detection
+of trigger events by implementing the ability to track clusters significant for a particular portfolio.
+
+The second case study relates to a news item dated August 30, 2024 about a possible license revocation and AU\$67
+million fine against Australia's largest gambling company, The Star Entertainment Group LTD
+(Figure \ref{fig:star_entertainment}). News reported allegations of money laundering. The shares were frozen
+for a month, and when trading resumed, their value collapsed by 55\%.
 
 \begin{figure}[H]
     \centering
@@ -225,3 +251,21 @@ signals on the dynamics of financial assets.
     collapsing and being temporarily halted from trading due to money laundering litigation.}
     \label{fig:star_entertainment}
 \end{figure}
+
+It is important to note that trading was halted 24 hours after the news was published, which is a sufficient
+interval for a sell signal to be detected. However, for the average investor not involved in intraday trading,
+this signal would very likely have been undetectable, leading to the dire situation of an investor unable to sell
+a depreciating asset and forced to hold an obvious loss indefinitely.
+
+In both cases, with FinABYSS, a financial analyst or investor would be among the first to recognize these incidents
+and react immediately to market signals. The simplest way to learn about triggers in a timely manner is the asset-based
+tracking module, which allows you to set filters by specific ticker, source, and topic to receive only targeted signals.
+
+Eventually, once the architecture proposed in \hyperref[sec:architecture]{Section 3.1} is fully implemented and trained, it will be possible
+to customize the filtering of news by its sentiment, as well as setting a custom threshold to detect meaningfully
+positive or negative news.
+
+FinABYSS thus takes financial analytics to a whole new level: instead of haphazard monitoring of media and articles,
+it gets ready-to-action alerts, visualization, and predictive support. The semantic map is already becoming an integral
+part of the workflow, and its value will only grow with the expansion of modalities and the introduction of a predictive
+mechanism.
