@@ -58,7 +58,6 @@ Thus, the bottleneck of this study and the proposed solution is the lack of comp
 models, which will be improved in further research.
 
 \subsubsection{Semantic Map}
-% \ref{sec:emb_sys_and_router}
 
 Finally, based on the developed embedding subsystem and the MoTE router, a separate UMAP model was trained,
 designed to translate vectors from the intermediate latent clustering space into a two-dimensional
@@ -70,7 +69,7 @@ and intuitive study of the thematic structure of news streams.
     \centering
     \includegraphics[width=1\linewidth]{img/semantic_map.png}
     \caption{Semantic map (early demo version) of a sample of 10,000 financial publications
-    from September 17, 2023 to March 1, 2025, clustered by financial topics.}
+    from September 17, 2023 to March 18, 2025, clustered by financial topics.}
     \label{fig:semantic_map}
 \end{figure}
 
@@ -109,6 +108,102 @@ links are connected in a single chain. The tool offers the user a transparent, s
 interface for semantic research of financial news, where each element --- from cluster labels to a cloud
 of words --- reflects the results of the computational logic of the system and supports expert solutions
 in the analysis of market processes.
+
+\subsubsection{Dynamic Topic Modeling}
+
+In addition to the Semantic Map, FinABYSS provides powerful tools for analyzing the linguistic features
+of formed thematic groups and dynamic temporal modeling of topics. All incoming texts go through
+the post-processing pipeline described in Section 2.4 in the context of the Analytical GUI (see Section 3.1.6),
+where each document is assigned a prevailing theme, and then the corresponding lexical features are extracted
+and aggregated.
+
+Thus, the system visualizes the frequency distribution of the most relevant words within the selected topic
+(Figure \ref{fig:topics_words_freqs}). This linguistic panel serves two purposes:
+
+\begin{itemize}
+    \item Firstly, after developing the system, it allows to validate the quality of the generated topics
+    and assess how unique and semantically homogeneous they are, in manual mode.
+    \item Secondly, this functionality can be very useful when a financial analyst is first introduced
+    to the system. A financial analyst working with FinABYSS for the first time gets an instant understanding
+    of the content of each topic without deep reading of texts.
+\end{itemize}
+
+It was the latter fact that led to the inclusion of this functionality in the set of basic analytical GUI toolkit.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{img/topics_words_freqs.png}
+    \caption{Topics words frequencies distribution}
+    \label{fig:topics_words_freqs}
+\end{figure}
+
+To illustrate this functionality, a subsample of 100,000 publications was randomly generated and 12 topics
+were selected within them for display. Among the sample, all topics undoubtedly have practical significance
+for financial markets. Moreover, there are more general industry topics such as:
+
+\begin{itemize}
+    \item Topic 2 related to the pharmaceutical industry;
+    \item Topic 13 related to the artificial intelligence sector;
+    \item Topic 28 related to cybersecurity;
+    \item Topic 33 related to the mining industry;
+    \item Topic 54, related to the aviation industry.
+\end{itemize}
+
+On the other hand, the sample also includes a common topic that is on the agenda in finance --- Topic 56,
+which clearly relates to ESG. Finally, there are highly specialized financial topics that were also identified
+automatically:
+
+\begin{itemize}
+    \item Topic 4 related to lawsuits and proceedings, which is potentially extremely important and
+    influential in the context of asset pricing;
+    \item Topic 6 related to external economic factors and the economy in general;
+    \item Topic 11, directly related to the asset market, namely cryptocurrencies;
+    \item Topic 15 related to company ownership rights;
+    \item Topic 21 related to the foreign exchange market;
+    \item Topic 22 related to cash flows, including future, present and discounted
+    cash flows.
+\end{itemize}
+
+So, we can observe the linguistic features of the topics, as well as very quickly and effectively study
+both the differences between them and specific topics in depth.
+
+On the other hand, it would be extremely useful to understand how topics change over time, because the information
+media space is extremely unstable, and the agenda in modern society is changing extremely quickly. Thus, FinABYSS
+implements dynamic thematic modeling through an interactive graph of topical time series.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{img/dynamic_topic_modeling.png}
+    \caption{Dynamic topic modeling}
+    \label{fig:dtm}
+\end{figure}
+
+The Figure \ref{fig:dtm} shows the same subsample of 12 topics. The abscissa axis reflects the publication
+interval (configurable: from daily to monthly or annual), the ordinate axis is the number of articles on each
+topic for the corresponding period. When hovering over the cursor, the five most representative words describing
+the topic in this time window are displayed. The user can change the number of words displayed.
+
+The advantages of this approach are obvious:
+
+\begin{itemize}
+    \item Early detection of trends. The analyst can observe the appearance of new lexical markers or the growth
+    of publication activity in thematic groups, which serves as a signal of emerging events.
+    \item Tracking cyclical phenomena. So, for Topic 13 (AI), the word TechCrunch appears on the chart in December
+    2023 and December 2024, the name of one of the largest and most prestigious conferences in the fields of IT and AI.
+    Every year, the conference produces many of the largest startups, which later receive large amounts of funding.
+    Thus, with this visualization, the analyst can keep up to date with cyclical events that are significant for finance
+    with less effort.
+    \item Reaction to force majeure events. In February 2025, there is a sharp peak on the same Topic 13 due
+    to the announcement of the Chinese LLM DeepSeek R1. This incident is extremely important, as it subsequently
+    caused the collapse of Nvidia shares, the largest company supplying computing equipment.
+\end{itemize}
+
+Thus, FinABYSS is not limited to the static construction of thematic clusters: interaction with linguistic metrics
+and temporal trends turns the system into a universal platform for financial analytics. The expert can switch from
+macro-trends to micro-lexical details in a few clicks, combine filters by date, source and subject, study the evolution
+of terminology and quickly respond to the appearance of new keywords or abnormal frequency changes. This makes FinABYSS
+not just a clustering tool, but a full-fledged ecosystem for semantic monitoring and forecasting the impact of media
+signals on the dynamics of financial assets.
 
 \subsubsection{Practical Importance}
 
