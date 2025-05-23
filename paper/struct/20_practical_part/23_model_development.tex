@@ -157,4 +157,50 @@ the GPU-accelerated implementation and demonstrated robustness of UMAP in cuML l
 for both intermediate dimensionality reduction and final 2D projection.
 
 \subsubsection{Hyperparameters Optimization}
-<<To be done later>>
+The model initialization phase was followed by a comprehensive hyperparameter optimization involving seven key parameters:
+five for UMAP (number of neighbors 'n\_neighbors', output space size 'n\_components', minimum distance between points 'min\_dist',
+parameter 'spread' and coefficient 'negative\_sample\_rate') and two for HDBSCAN ('min\_cluster\_size' and 'min\_samples'). Ray Tune
+\parencite{raytune2018liaw} and Optuna \parencite{optuna2019akiba} were tested as frameworks for finding the optimum,
+with an emphasis on a resource-based approach where the 'resource' was the size of the training subsample.
+Experimentally, we selected 5 training stages with shares from 1.5\% to 10\% of the total corpus, which allowed us
+to evaluate the scalability of the methods and the stability of the obtained hyperparameters.
+
+In the context of Ray Tune, the BOHB (Bayesian Optimization with HyperBand) scheme
+\parencite{TPEandBO2011bergstra, BOHB2018falkner, hyperband2018li, HPOoverview2015shahriari} was used, but it did not provide
+a proper speed-to-quality ratio when working with UMAP/HDBSCAN. Switching to Optuna, three varieties of “pruners” ---
+mechanisms for early cutoff of unpromising combinations during resource build-up --- were implemented. The first,
+'AdaptiveStablePercentilePruner', removed the worst ones by a predefined percentile in each resource step, the second,
+'CustomPatientPruner', minimized the risk of premature exclusion by cutting off combinations after $n$ consecutive
+unsuccessful steps with gains less than $\delta$, and the third, 'NormalPruner', used Z-statistics
+(Equation \ref{eq:z_score}) and a given percentile of the standard normal distribution ($\mathcal{N}(0, 1)$).
+
+\begin{equation}\label{eq:z_score}
+    z\text{-score}=\frac{m - \mathbb{E}[M]}{\mathbb{V}[M]},
+\end{equation}
+
+where $m$ is the current metric and $M$ is the distribution of metrics at this stage.
+
+Weighted Cumulative DBCV-index (WCDBCV) became the evaluation metric during the iterations:
+
+\begin{equation}
+    WCDBCV_j=\frac{1}{j\sum_{i=1}^jp_i} \sum_{i=1}^j p_i \cdot DBCV_i,
+\end{equation}
+
+where $j$ is the current resource step and $p_i$ is the fraction of the sample used at the $i$-th step.
+
+Of all combinations, the best performance was demonstrated by the  Tree-structured Parzen Estimator (TPE)
+algorithm \parencite{TPE2023watanabe, TPEandBO2011bergstra, HPOoverview2015shahriari} in conjunction
+with 'AdaptiveStablePercentilePruner', but the quality gain was not significant enough relative
+to the increased computational cost. Therefore, the subsequent hyperparameter search was performed
+without the use of pruning. As a global strategy, a classical TPE with 400 trails was used, half
+of which were performed in a “warm-up” mode of random configurations. An Covariance Matrix Adaptation
+Evolution Strategy (CMAES) \parencite{restartCMAES2005auger, CMAES2024nomura} with an IPOP restart mechanism,
+adaptive learning rate and a preliminary “warm run” based on the 15 best combinations found in the global
+optimization phase \parencite{CMAES2024nomura, lrCMAES2023nomura, restartCMAES2005auger, warmCMAES2021nomura} was
+used to locally fine-tune the emerged promising regions of the hyperparameter space. The budget
+for the local phase was 200 trails, which provided a deep search around already high-performing
+configurations.
+
+As a result of this two-tiered approach — first a broad TPE study, then an in-depth local CMAES
+search --- it was possible to balance the breadth and depth of optimization, improving
+the robustness of the model pipeline.
