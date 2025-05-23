@@ -1,1 +1,192 @@
-<<To be done later>>
+After completing the semantic clustering step and constructing topic groups,
+it is necessary to process the generated clusters at the linguistic level.
+In topic modeling, the quality of topic representations is key to interpreting
+topics, communicating results, and understanding patterns. Thus, it is necessary
+to validate that each document set is indeed characterized by a unique set of key
+terms and does not contain mis-segmentation artifacts. This validation goes beyond
+purely metric evaluations and requires an empirical, “human” view of which words
+truly define topic content. In the context of an unlabeled corpus, such validation
+is particularly important: without initial topic labels, the only source of information
+about the semantic homogeneity of clusters remains the text of the publication itself.
+Moreover, there is a need to assign names to each of the clusters, so it is crucial
+to develop a topic representation pipeline.
+
+On the other hand, clustering results in lower level labels, and in the context
+of the current system a hierarchical approach to topic representation is implied,
+which leads to the need to extract additional information from the current model
+and post-process it.
+
+To simplify and formalize the process, FinABYSS implemented a specialized topic
+representation pipeline based on the following tools:
+
+\begin{itemize}
+    \item BERTopic --- for convenient and simplified processing of linguistic features,
+    visualization of weighted word frequencies, and hierarchy construction.
+    \item OpenAI API — to automate the partitioning of the obtained clusters based
+    on their linguistic features.
+    \item DataMapPlot — to simplify work with the graphical interface and create
+    an interactive semantic map.
+    \item Proprietary implementation:
+    \begin{itemize}
+        \item over BERTopic — to realize the possibility of selecting a certain number
+        of hierarchical thematic levels.
+        \item between BERTopic and OpenAI — to realize the possibility of assigning thematic
+        names based on linguistic features at higher hierarchical levels than only
+        at the lowest one.
+        \item between BERTopic and DataMapPlot — for fine-tuning both static and interactive
+        semantic maps.
+    \end{itemize}
+\end{itemize}
+
+Thus, the first step in the pipeline was to vectorize the texts, i.e. to bring them to matrix
+form. For this purpose, the 'CountVectorizer' from the 'sklearn' library was used, which was
+configured to extract unigrams and bigrams. This is useful for a more accurate representation
+of topics as it leads to terms such as “central bank”, “monetary policy” and “New York” being
+considered both together rather than separately word by word.
+
+Henceforth, words in the context of documents such uni- and bigrams will be called “terms”
+to prevent confusion, since in fact, in the context of the developed system, not words but
+$n$-grams, i.e., short sequences of $n$ words, are considered.
+
+Also, based on the free English-language stop-word dictionary \parencite{nothman2018stop},
+the stage of filtering out articles, prepositions, pronouns, conjunctions and other parts
+of speech that interfere with the selection of truly representative terms was set up.
+
+Finally, the minimum frequency of a term in a document was configured for its inclusion
+in the matrix. It is not difficult to imagine a situation where a certain term occurs only
+once in all documents. It is unlikely that the term reflects a particular topic. On the other
+hand, the corpus contains over a million documents and unless a minimum frequency of a term
+is set, the matrix will become huge and impractical to use. Therefore, terms appearing less
+than 15 times in the entire corpus are cut off as statistically unrepresentative.
+
+Finally, the system implies real-time operation, so it is fundamental to be able
+to incrementally update the term matrix, for this purpose an online version
+of 'CountVectorizer' --- 'OnlineCountVectorizer' was used.
+
+After forming the matrix of terms, it is necessary to group them into thematic clusters
+and determine the relevance of terms for each thematic group, in order to further generate
+cluster names based on the most representative terms.
+
+Term Frequency Inverse Document Frequency (TF-IDF) and Best Match (BM-25) are additive
+relevance functions. They are used by most search engines as basic relevance metrics.
+Both metrics indicate the relevance of a document. The higher the value of the metrics,
+the more relevant the document is. Having said that, it is important to note that
+the value of the metrics itself does not have any meaningful interpretation other than
+the relative difference of relevance of documents or terms with each other.
+
+In the context of search engines, the metric reflects the relevance of a document or
+term to a search query, but the current system uses a modified TF-IDF metric that
+expresses the relevance of a term to a topic rather than to a query.
+
+Such a metric, is called c-TF-IDF \parencite{BERTopic2022}. It can best be explained as a TF-IDF
+formula adopted for the topic as a whole. That is, all documents within a topic
+are not considered separately, but are combined into one large document, on the basis
+of which the calculation is made. Thus, c-TF-IDF takes into account what distinguishes
+documents in one topic cluster from documents in another.
+
+Thus, we first extract the frequency of term $x$ in topic cluster $c$ to which term
+$x$ belongs. This results in a class-based representation of $tf$. And in order
+to account for the differences in the size of topic clusters, the $L_1$-norm is computed
+from the extracted frequencies.
+
+Then, the logarithm of the sum of the unit and the quotient of dividing the average number
+of words in each topic cluster by the frequency of word $x$ in all clusters is calculated.
+Thus, an $idf$ representation is obtained, which helps to determine how rare a given word
+$x$ is among all other classes. The unit is needed to ensure that the logarithm is always
+positive.
+
+Finally, as in the case of regular TF-IDF, the obtained representations $tf$ and $idf$
+are multiplied (Equation \ref{eq:c_tf_idf}):
+
+\begin{equation}\label{eq:c_tf_idf}
+    w_{x, c} =
+    ||tf_{x, c}||_1
+    \times
+    \log\Bigg(
+        1 + \cfrac{
+            \frac{1}{||\mathbb{C}||}\sum_{i \in \mathbb{C}}||\mathbb{X}_i||
+        }{
+            \sum_{i \in \mathbb{C}}x
+        }
+    \Bigg),
+\end{equation}
+
+where $w_{x, c}$ is the relevance of term $x$ to topic cluster $c$, $\mathbb{X}_i$ is the set
+of all terms in topic cluster $i$.
+
+However, instead of the classical c-TF-IDF formula, it was decided to use its modified analog.
+Some words or terms occur too frequently in each topic, but are not considered typical stop words
+for exclusion from the text. To smooth out the most frequent terms in a topic, the system applies
+term frequency normalization, i.e., it extracts the square root of $tf$, after applying a weighting
+scheme.
+
+On the other hand, although the collected financial corpus is large, it may not fully represent all
+the lexical abundance of the general population. Therefore, for a more stable result, BM-25
+transformation was applied to $idf$. The final relevance formula looks as follows:
+
+\begin{equation}
+    w_{x, c} =
+    \sqrt{||tf_{x, c}||_1}
+    \times
+    \log\Bigg(
+        1 + \cfrac{
+            \frac{1}{||\mathbb{C}||}\sum_{i \in \mathbb{C}}||\mathbb{X}_i|| - \sum_{i \in \mathbb{C}}x + 0.5
+        }{
+            \sum_{i \in \mathbb{C}}x + 0.5
+        }
+    \Bigg),
+\end{equation}
+
+The $0.5$ coefficients are based on fitting to a theoretically cleaner form. This form gives less weight
+to terms that occur too frequently.
+
+As a result, we obtain bag-of-words for each of the topic clusters that are fairly representative
+of the lexical richness of each topic. However, the bag-of-words may still contain some words that
+are not fully representative or the bag may be overly homogeneous. These problems can negatively affect
+the topic name generation process, so a more sophisticated pipelining was envisioned in the system design,
+which adds 2 more steps before the final representation.
+
+The first step is to semantically compare the most representative words, with the most representative
+documents. First, the 30 most representative terms are extracted from the bag-of-words, and the 5-10 most
+representative documents are extracted from the topic cluster itself. Then, we collect the already
+extracted embeddings from the corresponding documents, and using the same embedding model ---
+'gte-modetnbert-base' --- we extract embeddings from the selected terms. Then, we compare the candidate
+terms' embeddings with the most representative documents and rank them according to the obtained value
+of the cosine distance metric.
+
+In the second step, we apply the Maximal Marginal Relevance (MMR) algorithm, which is a technique for
+query-based abstracting that maximizes the similarity of the query response fragments and minimizes
+the similarity to the fragments already selected in the response. Similar to TF-IDF, in the context
+of the current system, a term rather than a query is considered. That is, we maximize the internal
+diversity of the most representative term topics. MMR is computed using the following formula:
+
+\begin{equation}\label{eq:mmr}
+    MMR =
+    \argmax_{
+        t_i \in \mathbb{R} \setminus \mathbb{S}
+    }[
+        \lambda(sim_1(t_i,\mathbb{C})) - (1 - \lambda)\max_{t_j \in \mathbb{S}}(sim_2(t_i, t_j))
+    ],
+\end{equation}
+
+where $\mathbb{T}$ is the topic for which $MMR$ is calculated, $\mathbb{R}$ is the set of all terms
+$t_i$ is the term under consideration, and $\mathbb{S}$ is the set of already selected terms.
+It turns out that we search for a new term from $mathbb{R} \setminus \mathbb{S}$ so that it is
+maximally similar to the topic, but minimally similar to the terms already present in the bag-of-words.
+In Equation \ref{eq:mmr}, the coefficient $\lambda$ is a hyperparameter and balances the similarity
+of terms to the topic with the dissimilarity of terms to each other. The smaller the $\lambda$ is,
+the less similar the terms are to each other, and the larger it is, the more similar the terms are
+to the topic.
+
+Thus, we have a maximally representative set of terms, against which we can generate topic names.
+The system provides the use of text2text models directly for topic generation. Specifically,
+in the current implementation we used the GPT-4o model, for which we defined a corresponding prompt
+with instructions. The model was used with the help of OpenAI API. And all generated labels were
+later validated manually.
+
+Finally, the final step is the visualization of the semantic map. The visualization was done
+in two formats: static --- for work and presentation, and interactive --- for system functioning.
+Visualization was performed using the Python library DataMapPlot, as well as custom add-ons in
+HTML, CSS and JavaScript. Also at the system level, functionality was developed for text search,
+building a word cloud, filtering by source, assets, publication date, and other quantitative
+attributes.
