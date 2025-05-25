@@ -19,27 +19,6 @@ recordings can be attracted as additional modalities. Thus, at the current stage
 each of which carries an independent semantic load and is able to explain price dynamics independently,
 but their interaction can both amplify the useful signal and introduce noise.
 
-There are three commonly accepted mechanisms for multimodal data fusion. The first, Early Fusion, involves feeding
-all features (stock quotes, technical indicators, and textual embeddings) at once into a single CNN-LSTM model
-\parencite{Karpathy_2014_CVPR, dutt2022shared}. The advantage of the method is the ease of implementation and the ability
-to immediately learn cross-modal dependencies. However, in practice Early Fusion is prone to “choking” in the noise
-of one of the modalities and loses flexibility when dynamically estimating the contribution of each modality
-\parencite{dutt2022shared}.
-
-The second method, Late Fusion, combines the predictions of individual channels (each modality is processed by its
-CNN-LSTM branch) only at the final stage \parencite{Karpathy_2014_CVPR, ortega2019multimodal}. This approach is characterized
-by modularity (easy replacement or additional training of a single channel), but it excludes extraction of low-level
-cross-modal patterns and requires training all branches separately, which entails a multiple increase in computational
-resources \parencite{joze2020mmtm}.
-
-The third, compromise mechanism, Slow Fusion, provides staged, “slow” merging of links at different layers of the network
-\parencite{feichtenhofer2016convolutional, dutt2022shared}. Slow Fusion approaches Early Fusion for early merging, and Late Fusion
-for late merging. The key advantages of the method are: the balance between the autonomous processing of each modality
-and the possibility of taking into account their interaction, preserving the “purity” of low-level features and
-the flexibility of setting the number and depth of integration stages \parencite{Karpathy_2014_CVPR}. The main disadvantages
-are the difficulty of choosing the optimal fusion level and increased computational costs due to parallel branches
-at early layers, but nevertheless, less than in Late Fusion.
-
 In this study, the architecture was based on CNN-LSTM using Slow Fusion. The main engineering challenge was to harmonize
 the spatio-temporal shapes of features of different modalities. To address this challenge, the architecture introduced
 a Feature Caching Mechanism block that synchronizes the tone vectors of the textual modality with the stock time series.
