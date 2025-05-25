@@ -1,0 +1,44 @@
+\babel@toc {english}{}\relax 
+\contentsline {section}{Introduction}{4}{section*.1}%
+\contentsline {section}{\numberline {1}THEORETICAL OVERVIEW}{7}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Artificial Intelligance in Finance}{7}{subsection.1.1}%
+\contentsline {subsubsection}{\numberline {1.1.1}Price Prediction}{7}{subsubsection.1.1.1}%
+\contentsline {subsubsection}{\numberline {1.1.2}Sentiment Analysis}{8}{subsubsection.1.1.2}%
+\contentsline {subsubsection}{\numberline {1.1.3}Aspect Analysis}{9}{subsubsection.1.1.3}%
+\contentsline {subsection}{\numberline {1.2}Machine Learning Algorithms}{10}{subsection.1.2}%
+\contentsline {subsubsection}{\numberline {1.2.1}Dimensionality Reduction}{10}{subsubsection.1.2.1}%
+\contentsline {subsubsection}{\numberline {1.2.2}Clustrering}{13}{subsubsection.1.2.2}%
+\contentsline {subsubsection}{\numberline {1.2.3}Evaluation}{15}{subsubsection.1.2.3}%
+\contentsline {subsection}{\numberline {1.3}Deep Neural Networks}{16}{subsection.1.3}%
+\contentsline {subsubsection}{\numberline {1.3.1}Models}{16}{subsubsection.1.3.1}%
+\contentsline {subsubsection}{\numberline {1.3.2}Techniques}{18}{subsubsection.1.3.2}%
+\contentsline {subsubsection}{\numberline {1.3.3}Benchmarks}{20}{subsubsection.1.3.3}%
+\contentsline {section}{\numberline {2}PRACTICAL SOLUTION}{22}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Limitaions}{22}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Data Governance}{24}{subsection.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.1}Data Requirements}{24}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.2}Data Collecting}{27}{subsubsection.2.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.3}Data Analysis}{28}{subsubsection.2.2.3}%
+\contentsline {subsubsection}{\numberline {2.2.4}Data Preprocessing}{33}{subsubsection.2.2.4}%
+\contentsline {subsection}{\numberline {2.3}Model Development}{35}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Feature Extraction}{35}{subsubsection.2.3.1}%
+\contentsline {subsubsection}{\numberline {2.3.2}UMAP and HDBSCAN}{36}{subsubsection.2.3.2}%
+\contentsline {subsubsection}{\numberline {2.3.3}Hyperparameters Optimization}{38}{subsubsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.4}System Development}{39}{subsection.2.4}%
+\contentsline {section}{\numberline {3}RESULTS}{44}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Invented Architecture}{44}{subsection.3.1}%
+\contentsline {subsubsection}{\numberline {3.1.1}Overview}{44}{subsubsection.3.1.1}%
+\contentsline {subsubsection}{\numberline {3.1.2}Embedding System}{45}{subsubsection.3.1.2}%
+\contentsline {subsubsection}{\numberline {3.1.3}Mixture-of-Topical-Experts}{46}{subsubsection.3.1.3}%
+\contentsline {subsubsection}{\numberline {3.1.4}Feature Caching Mechanism}{47}{subsubsection.3.1.4}%
+\contentsline {subsubsection}{\numberline {3.1.5}Predictive Model}{49}{subsubsection.3.1.5}%
+\contentsline {subsubsection}{\numberline {3.1.6}Analytical Graphical User Interface}{51}{subsubsection.3.1.6}%
+\contentsline {subsection}{\numberline {3.2}Finished System Components}{52}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1}Embedding System and Router}{52}{subsubsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {3.2.2}Semantic Map}{54}{subsubsection.3.2.2}%
+\contentsline {subsubsection}{\numberline {3.2.3}Dynamic Topic Modeling}{56}{subsubsection.3.2.3}%
+\contentsline {subsubsection}{\numberline {3.2.4}Practical Importance}{59}{subsubsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.3}Semantic De-duplication Solution}{61}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}Mathematical Formulaion}{61}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.2}Pros and Cons}{63}{subsubsection.3.3.2}%
+\contentsline {section}{Conclusion}{65}{section*.18}%
