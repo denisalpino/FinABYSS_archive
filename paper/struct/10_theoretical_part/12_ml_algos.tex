@@ -202,4 +202,49 @@ nested topics of different granularity, and reliably eliminates irrelevant noise
 compared to K-Means or “flat” DBSCAN \parencite{BERTopic2022}.
 
 \subsubsection{Evaluation}
-Silhouette Index + Stability Index + DBCV
+In the joint optimization problems of dimensionality reduction and clustering algorithms, it is critical
+to apply metrics that can simultaneously evaluate the quality of the projection and the purity of the selected
+groups. The two most common metrics in this context are the silhouette index \parencite{silouette1987}
+and the DBCV index \parencite{dbcv2014density}.
+
+The silhouette coefficient characterizes, for each object, the ratio of the average intra-cluster distance
+to the nearest extra-cluster distance \parencite{silouette1987}. For object $i$ the following are calculated
+
+\begin{equation}
+    a(i)=\frac{1}{|C_i|-1}\sum_{j\in C_i\setminus\{i\}}d(i,j),\quad b(i)=\min_{C\neq C_i}\frac{1}{|C|}\sum_{j\in C}d(i,j),
+\end{equation}
+
+where $C_i$ is the cluster containing $i$, and $d(\cdot,\cdot)$ is the metric (usually Euclidean). Then
+
+\begin{equation}
+    s(i)=\frac{b(i)-a(i)}{\max\{a(i),\,b(i)\}}\in[-1,1].
+\end{equation}
+
+The mean $s=\frac1N\sum_i s(i)$ reflects how compact and distant objects within clusters are from neighboring
+clusters.
+
+The silhouette coefficient is well suited for assessing separability for “spherical” clusters, but
+for density-based separability (different cluster densities and shapes) it can give overestimates or distorted
+estimates, since in this case intra-cluster and inter-cluster distances do not reflect the quality of density
+regions. In particular, the same is true for other indices of similar metrics, such as the Davis-Bolden and
+Calinski-Harabasz index \parencite{mmj2023liu}. All of them rely on average distances to centers or variance across clusters
+and do not take into account density heterogeneity and noise extraction \parencite{liu2024newindexclusteringevaluation}.
+
+Thus, was developed a density-based metric specifically for DBSCAN/HDBSCAN clustering, the Density-Based Clustering Validation
+Index (DBCV) \parencite{dbcv2014density}. This metric measures the average density ratio of “within - between” clusters,
+and also explicitly handles noise and arbitrary cluster shape. Together, it allows correct estimation of arbitrarily shaped
+clusters, which strictly speaking are called irregular clusters.
+
+On the other hand, DBCV has a key disadvantage --- when clusters overlap, it gives a higher score to their union than to their
+dissection, which can negatively affect exactly hierarchical density clustering. Another problem with existing cluster
+validity indices is the assumption that data within a cluster has a uniform distribution, even if the shape of the cluster
+is arbitrary
+
+There are also other metrics, such as VIASCKDE \parencite{viasckde2022} and Min-Max-Jump Silhouette coefficient (MMJ-SC)
+\parencite{mmj2023liu, liu2024newindexclusteringevaluation}, they clearly have potential in a fairly wide range of tasks,
+but are still inferior to DBCV in stability on a large range of different tasks and test cases.
+
+On the test data of clusters of complex nested shapes in three-dimensional space, the DBCV index is the only metric that
+performed correctly, showing a maximum value of 0.53 on the true clustering variant, while the silhouette coefficient,
+although it showed a higher maximum value of 0.62, but this maximum of the metric came from the categorically incorrect
+cluster partitioning \parencite{liu2024newindexclusteringevaluation}.
