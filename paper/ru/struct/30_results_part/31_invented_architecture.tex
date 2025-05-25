@@ -1,155 +1,157 @@
-\subsubsection{Overview}
+\subsubsection{Обзор}
 
-In this research, a new generation predictive system architecture has been developed. The main focus
-of this paper is the creation of a thematic modeling system and analytical interface for the financial
-subject area. A logical extension would be to build an interpretable and efficient predictive model based
-on the thematic tone of financial publications (news articles, press releases, posts, transcripts, etc.).
-Thus, the present work not only demonstrates the functioning principles of the basic module, but also
-formulates a vision of how it can be extended with asset price prediction capabilities.
+В рамках данного исследования была разработана архитектура предиктивной системы нового поколения.
+Основное внимание в настоящей работе уделено созданию системы тематического моделирования и аналитического
+интерфейса для финансовой предметной области. Логичным продолжением станет построение интерпретируемой
+и эффективной модели прогнозирования на основе тематической тональности финансовых публикаций
+(новостных статей, пресс‑релизов, постов, транскриптов и др.). Таким образом, настоящая работа
+не только демонстрирует принципы функционирования базового модуля, но и формулирует видение того,
+каким образом можно расширить её возможностями предсказания цен активов.
 
-The proposed architecture relies on proven robust mixed prediction approaches --- a combination of convolutional
-and recurrent neural networks (CNN-LSTM) \parencite{Hochreiter1997LSTM, CNN1998lecun, CNN_LSTM2020finance}. This solution
-allows simultaneous consideration of global long-term trends (such as the overall market trend) and local short-term
-patterns (such as head-and-shoulders, double bottoms, and other behavioral economics-driven structures).
+Предложенная архитектура опирается на доказавшие свою надёжность подходы смешанного прогнозирования ---
+сочетание сверточных и рекуррентных нейронных сетей (CNN-LSTM) \parencite{Hochreiter1997LSTM, CNN1998lecun, CNN_LSTM2020finance}.
+Это решение позволяет одновременно учитывать глобальные долгосрочные тенденции (например, общий тренд рынка)
+и локальные краткосрочные паттерны (такие как «голова и плечи», «двойное дно» и другие структуры,
+обусловленные поведенческой экономикой).
 
-It is important to keep in mind the variety of input data. Exchange metrics (Open, High, Low, Close, Volume, etc.)
-and derived technical indicators (RSI, MACD, etc.) are usually used for forecasting. Our study adds textual data
-as an Over The Counter (OTC) source. In the future, graph representations of links, images, audio and video
-recordings can be attracted as additional modalities. Thus, at the current stage we work with three modalities,
-each of which carries an independent semantic load and is able to explain price dynamics independently,
-but their interaction can both amplify the useful signal and introduce noise.
+При этом важно помнить о разнообразии исходных данных. Для прогнозирования обычно используют биржевые метрики
+(OHLCV и т.п.) и производные технические индикаторы (RSI, MACD и др.).
+В нашем исследовании к ним добавляются текстовые данные как внебиржевой источник. В дальнейшем в
+качестве дополнительных модальностей могут быть привлечены графовые представления связей, изображения,
+аудио‑ и видеозаписи. Таким образом, на текущем этапе мы работаем с тремя модальностями, каждая из которых
+несёт самостоятельную смысловую нагрузку и способна объяснить динамику цен независимо, но их взаимодействие
+может как усиливать полезный сигнал, так и вносить шум.
 
-In this study, the architecture was based on CNN-LSTM using Slow Fusion. The main engineering challenge was to harmonize
-the spatio-temporal shapes of features of different modalities. To address this challenge, the architecture introduced
-a Feature Caching Mechanism block that synchronizes the tone vectors of the textual modality with the stock time series.
+В данном исследовании архитектура была построена на основе CNN-LSTM с использованием медленного слияния.
+Основной инженерный вызов состоял в согласовании пространственно‑временных форм признаков разных модальностей.
+Для решения этой задачи в архитектуру введён Механизм Кэширования Признаков (Feature Caching Mechanism, FCM),
+который синхронизирует тональностные векторы текстовой модальности с биржевыми временными рядами.
 
-Additionally, the textual branch is preprocessed: based on the developed thematic modeling system, the thematic tones
-of publications are computed. This allows obtaining specialized scores for each topic, which gives an advantage over
-the use of a single common tone.
+Дополнительно текстовая ветвь подвергается предобработке: на основе разработанной системы тематического
+моделирования вычисляются тематические тональности публикаций. Это позволяет получить специализированные
+оценки по каждой теме, что даёт преимущество перед использованием единой общей тональности.
+
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\linewidth]{img/architecture_overview.png}
-    \caption{Overview of Financial Aspect-Based hybrid Semantic System (FinABYSS) architecture.}
+    \caption{Обзор спроектированной архитектуры FinABYSS.}
     \label{fig:architecture_overview}
 \end{figure}
 
-The designed system consists of five main modules (Figure \ref{fig:architecture_overview}):
+Спроектированная система состоит из пяти основных модулей (Изображение \ref{fig:architecture_overview}):
 
 \begin{itemize}
-    \item A financial language model (domain-adapted, fine-tuned for the STS task) that produces vector representations
-    of the whole text and for each token.
-    \item A Mixture-of-Topical-Experts that shapes the tone of the publication for each topic.
-    \item A Temporal Caching Mechanism that aligns topic vectors to timestamps of stock data.
-    \item A kernel predictive model with CNN-LSTM and Slow Fusion that processes all modalities and predicts asset price.
-    \item An analytical GUI that aggregates intermediate results for further financial analysis.
+    \item Финансовая языковая модель (доменно-адаптированная, тонко настроенная для задачи STS), выдающая векторные представления текста целиком и для каждого токена.
+    \item Смесь тематических экспертов (Mixture-of-Topical-Experts, MoTE), формирующая тональность публикации по каждой теме.
+    \item TCM, выравнивающий тематические векторы по временным меткам биржевых данных.
+    \item Ядровая предиктивная модель с CNN-LSTM и медленным слиянием, обрабатывающая все модальности и предсказывающая цену актива.
+    \item Аналитический графический интерфейс (GUI), агрегирующий промежуточные результаты для последующего финансового анализа.
 \end{itemize}
 
-Thus, the developed architecture is a powerful and adaptable tool for predicting the value of financial assets
-based on a comprehensive evaluation of the thematic sentiment of publications.
+Таким образом, созданная архитектура представляет собой мощный и адаптируемый инструмент
+для прогнозирования стоимости финансовых активов на основе комплексной оценки тематических сентиментов публикаций.
 
-\subsubsection{Embedding System}
-Proceeding to the consideration of individual blocks of the developed architecture, we should start with the stage
-of data preprocessing. The most resource-intensive and complex of them is the preparation of OTC text sources.
+\subsubsection{Эмбеддинговая система}
+Приступая к рассмотрению отдельных блоков разработанной архитектуры, следует начать с этапа предобработки данных.
+Наиболее ресурсоёмким и сложным из них является подготовка внебиржевых текстовых источников.
 
-Immediately after entering the system, the text undergoes primary processing with the help of a domain-adapted
-financial embedding model configured for the STS task. This model extracts vector
-representations for each token, thus preserving subtle contextual relationships within sentences. As new versions
-of embedding models become available, it is important to regularly update the underlying model and re-adapt it
-to the specifics of the financial domain.
+Сразу после поступления в систему текст проходит первичную обработку с помощью доменно‑адаптированной финансовой
+эмбеддинговой модели, настроенной на задачу STS. В результате работы этой
+модели извлекаются векторные представления для каждого токена, что позволяет сохранить тонкие контекстные связи
+внутри предложений. По мере появления новых версий эмбеддинговых моделей важно регулярно обновлять базовую модель
+и повторно адаптировать её к специфике финансового домена.
 
-The simplest path of domain adaptation involves an additional training stage on a Masked Language Modeling (MLM)
-task. The corpus of financial publications generated in this study or its extended version, as well as other relevant
-text corpora, can be used as a corpus for this purpose. For fine-tuning for the STS task, small labeled datasets
-are sometimes used, but to save resources it is possible to do without them, using contrastive learning methods
-on random subsamples of the main corpus \parencite{gao2021simcse}.
+Простейший путь доменной адаптации включает дополнительную стадию обучения на задаче MLM. В качестве корпуса
+для этой цели может использоваться корпус финансовых публикаций, сформированный в ходе настоящего исследования,
+либо его расширенная версия, а также другие релевантные текстовые корпусы. Для тонкой настройки под задачу STS
+иногда применяют небольшие размеченные датасеты, однако для экономии ресурсов возможно обойтись и без них,
+используя методы контрастивного обучения на случайных подвыборках основного корпуса \parencite{gao2021simcse}.
 
-Once the token embeddings are extracted, they are aggregated: usually averaging is applied, which gives a vector
-representation of the whole document. Then the document and its embeddings (both tokens and the averaged vector)
-are passed to the analysis module for visualization and interpretation of the results. In parallel, the document
-vector is sent to the “Mixture-of-Topical-Experts” block, where the topic tones of the publication are generated
-based on it.
+После извлечения эмбеддингов токенов производится их агрегирование: обычно применяется усреднение, что даёт векторное
+представление всего документа. Далее документ и его эмбеддинги (как токенов, так и усреднённый вектор) передаются
+в аналитический модуль для визуализации и интерпретации результатов. Параллельно вектор документа направляется
+в блок MoTE, где на его основе формируются тематические тональности публикации.
 
-As a concrete implementation, this study uses the 'gte-modernbert-base' model built on the ModernBERT architecture.
-Although it did not undergo domain adaptation initially, it shows high performance: the clustering of embeddings
-yielded a DBCV index of 0.485, and visual and contextual analysis showed a clear separation of thematic groups.
+В качестве конкретной реализации в данном исследовании используется модель 'gte-modernbert-base', построенная на архитектуре
+ModernBERT. Несмотря на то, что изначально она не проходила доменную адаптацию, она демонстрирует высокую эффективность:
+при кластеризации эмбеддингов удалось получить DBCV-индекс 0.407, а визуальный и контекстуальный анализ показали чёткое разделение тематических групп.
 
-Thus, the proposed preprocessing step provides:
+Таким образом, предложенный этап предобработки обеспечивает:
 
 \begin{itemize}
-    \item Preserving deep semantic relations at the token and whole document level.
-    \item Flexibility and reproducibility of the model adaptation process to the financial corpus.
-    \item Integration of the results into the neighboring blocks of the architecture --- a Mixture-of-Topical-Experts
-    and analytical GUI system.
+    \item Сохранение глубоких семантических связей на уровне токенов и всего документа.
+    \item Гибкость и воспроизводимость процесса адаптации модели к финансовому корпусу.
+    \item Интеграцию результатов в соседние блоки архитектуры --- MoTE и аналитический GUI.
 \end{itemize}
 
-\subsubsection{Mixture-of-Topical-Experts}
+\subsubsection{Смесь тематических экспертов}
 
-This block utilizes a state-of-the-art Mixture-of-Experts (MoE) architecture that has been successfully
-applied in large language models (e.g., Mixtral 8×7B, DeepSeek R1) and in Google research (Switch Transformer)
-\parencite{fedus2022switch}. The main components, a learning router and multiple experts, allow only a small fraction
-of parameters to be dynamically activated at inference, ensuring high throughput and efficiency
-\parencite{shazeer2017outrageously}. Especially for the analysis of financial texts, the experts are thematically
-specialized, which increases interpretability and accuracy in assessing the tone of publications.
+Данный блок использует современную архитектуру Mixture-of-Experts (MoE), успешно применяемую в крупных
+языковых моделях (например, Mixtral 8×7B, DeepSeek R1) и в исследованиях Google (Switch Transformer) \parencite{fedus2022switch}.
+Основные компоненты данного блока --- обучаемый роутер и множество экспертов --- позволяют динамически активировать
+лишь небольшую часть параметров при инференсе, обеспечивая высокую пропускную способность и эффективность
+\parencite{shazeer2017outrageously}. Специально для анализа финансовых текстов эксперты тематически
+специализированы, что повышает интерпретируемость и точность оценки тональности публикаций.
 
-MoE architecture is based on the principle of conditional computation: only a part of subnets (“experts”) is active
-for each input example, which reduces computational costs at a huge total number of parameters
+Архитектура MoE построена на принципе условных вычислений: лишь часть подсетей («экспертов») активна
+для каждого входного примера, что снижает вычислительные затраты при огромном общем числе параметров
 \parencite{shazeer2017outrageously}.
 
+
 \begin{itemize}
-    \item The router (gating network) receives the embedding of a document as input and computes a distribution
-    of “weights” for all experts, then selects either the top-K experts or those whose weight exceeds a threshold
+    \item Роутер получает на вход эмбеддинг документа и вычисляет распределение «весов» для всех экспертов,
+    после чего выбирает либо топ-K экспертов, либо тех, чей вес превышает заданный порог, являющийся гиперпараметром.
     \parencite{fedus2022switch}.
-    \item Experts are shallow feed-forward networks, each specializing in a different topic (in the context
-    of the paper, one of the financial topics) \parencite{shazeer2017outrageously}.
+    \item Эксперты представляют собой неглубокие feed-forward сети, каждая из которых специализируется на своей
+    тематике (в контексте работы --- на одной из финансовых тем) \parencite{shazeer2017outrageously}.
 \end{itemize}
 
-When processing each embedding, only a small fraction of experts are activated --- usually by Top $K$ (selecting $K$
-of the most relevant experts) or by a threshold value (weighting the expert above a given threshold) --- making MoE
-extremely computationally parsimonious with a colossal total number of parameters \parencite{fedus2022switch}.
-The values of $K$ and $\theta$ act as hyperparameters and are customized on validation data.
+При обработке каждого эмбеддинга активизируется лишь малая часть экспертов --- обычно по Top $K$
+(выбор $K$ наиболее релевантных экспертов) или по пороговому значению (вес эксперта выше заданного порога) ---
+что делает MoE чрезвычайно экономным с точки зрения вычислений при колоссальном общем числе параметров \parencite{fedus2022switch}.
+Значения $K$ и $\theta$ выступают гиперпараметрами и настраиваются на валидационных данных.
 
-For analyzing financial texts, the MoE model is a logical choice, since publications often contain a mixture
-of related topics (macroeconomics, corporate reports, geopolitics, etc.), and it is necessary to evaluate the tone
-from different angles. Experts make it possible to form specialized assessments for each topic simultaneously,
-preserving the “purity” of low-level processing and ensuring the interpretability of the results \parencite{jacobs1991adaptive}.
-Nevertheless, it is also worth noting the high complexity of selecting $K$ or $\theta$ hyperparameters
-\parencite{jacobs1991adaptive}.
+Для анализа финансовых текстов MoE-модель является логичным выбором, поскольку публикации часто содержат смесь
+смежных тематик (макроэкономика, корпоративные отчёты, геополитика и др.), и требуется оценить тональность
+под разными углами. Эксперты позволяют формировать специализированные оценки по каждой теме одновременно,
+сохраняя «чистоту» низкоуровневой обработки и обеспечивая интерпретируемость результатов \parencite{jacobs1991adaptive}.
+Тем не менее, стоит отметить и высокую сложность подбора $K$ или $\theta$ гиперпараметров \parencite{jacobs1991adaptive}.
 
-Instead of training experts on subjectively labeled data, their parameters are optimized by back propagation of the error
-coming from the asset price prediction unit. This ensures that each expert is trained directly on the impact of publications
-on asset prices rather than on external annotations \parencite{shazeer2017outrageously}. Once topic tones are obtained,
-they are aggregated by weighted summation considering topic probabilities, normalized, and sent to the analytics system
-for visualization, and to the feature caching engine for synchronization with exchange data.
+Вместо обучения экспертов на субъективно размеченных данных их параметры оптимизируются обратным распространением ошибки,
+поступающей из блока предсказания цен активов. Это гарантирует, что каждый эксперт обучается напрямую на влиянии публикаций
+на стоимость активов, а не на внешних аннотациях \parencite{shazeer2017outrageously}. После получения тематических тональностей
+они агрегируются взвешенным суммированием с учётом вероятностей тем, нормализуются и направляются в аналитическую
+систему для визуализации, а также в механизм кэширования признаков для синхронизации с биржевыми данными.
 
-Thus, the MoE-based Mixture-of-Topical-Experts block provides a combination of scalability, efficiency, and interpretability
-in analyzing financial texts. The dynamic activation of a small number of experts allows processing huge models without
-a proportional increase in computation, and training the experts through the signal from the price prediction model makes
-the estimation of tones objective and close to the economic reality. Thus, the proposed architecture opens up new opportunities
-for accurate prediction and in-depth analysis of the impact of textual publications on the value of financial assets.
+Таким образом, блок MoTE на базе MoE обеспечивает обеспечивает сочетание масштабируемости,
+эффективности и интерпретируемости при анализе финансовых текстов. Динамическая активация небольшого числа
+экспертов позволяет обрабатывать огромные модели без пропорционального роста вычислений, а обучение экспертов через
+сигнал от модели прогнозирования цен делает оценку тональностей объективной и близкой к экономической реальности.
+Таким образом, предлагаемая архитектура открывает новые возможности для точного прогнозирования и глубокого анализа
+влияния текстовых публикаций на стоимость финансовых активов.
 
-\subsubsection{Feature Caching Mechanism}
-The Feature Caching Mechanism is the central component of the architecture that ensures synchronization
-between exchange data (regularly arriving time series) and over-the-counter textual “ticks” scattered
-in time. When a new assessment of the tone of a publication on topic $i$ arrives from the Mixture-of-Topical-Experts
-block, it is instantly added to the matrix of accumulative exponentially smoothed values by Equation \ref{eq:exp_decay}:
+\subsubsection{Механизм кэширования признаков}
+FCM представляет собой центральный компонент архитектуры, обеспечивающий синхронность между биржевыми данными
+(регулярно поступающими временными рядами) и внебиржевыми текстовыми «тиками», разбросанными во времени.
+Когда из блока Смеси Тематических Экспертов поступает новая оценка тональности публикации по теме $i$,
+она моментально добавляется в матрицу накопительных экспоненциально сглаженных значений по Формуле \ref{eq:exp_decay}:
 
 \begin{equation}\label{eq:exp_decay}
     x_{i,t}=x_{i, t-1} + x_{i, 0} \cdot e^{-\lambda \cdot t},
 \end{equation}
 
-where $x_{i, 0}$ is the initial tone on topic $i$, $x_{i,t-1}$ is the previous smoothed value, and $\lambda$
-is the hyperparameter of the rate of exponential “fading” of the signal. This approach reflects the lagged
-and time-smoothed response of market participants to publications.
+где $x_{i, 0}$ --- исходная тональность по теме $i$, $x_{i,t-1}$ --- предыдущее сглаженное значение,
+а $\lambda$ --- гиперпараметр скорости экспоненциального «затухания» сигнала. Такой подход отражает
+запаздывающую и сглаженную во времени реакцию участников рынка на публикации.
 
-This approach takes into account that market participants' reaction to information events is delayed
-and distributed in time: the first “wave” of perception fades quickly, followed by smoother and longer
-effects, which in finance is traditionally modeled by exponential decline.
+Данный подход учитывает, что реакция участников рынка на информационные события задерживается и распределена
+во времени: первая «волна» восприятия быстро затухает, за ней следуют более плавные и длительные эффекты,
+что в финансах традиционно моделируется экспоненциальным спадом.
 
-Since the original tones are normalized in the range $[-1,1]$, the cumulative summation by the
-Equation \ref{eq:exp_decay} can go beyond these bounds. To keep the scaling within acceptable
-intervals and to make the accumulation smooth, we propose to re-normalize the results using
-a hyperbolic tangent (Equation \ref{eq:tanh1}):
+Так как исходные тональности нормированы в диапазоне $[-1,1]$, накопительное суммирование по первой формуле
+может выходить за эти границы. Чтобы сохранить скалирование в допустимых интервалах и придать плавность
+накоплению, предлагается повторно нормировать результаты с помощью гиперболического тангенса (Формула \ref{eq:tanh1}):
 
 \begin{equation}\label{eq:tanh1}
     tone_{i, t} = \tanh(tone_{i, t-1} + x_{i,t}) =
@@ -160,7 +162,7 @@ a hyperbolic tangent (Equation \ref{eq:tanh1}):
     }.
 \end{equation}
 
-which is equivalent to Equation \ref{eq:tanh2}:
+что эквивалентно Формуле \ref{eq:tanh2}:
 
 \begin{equation}\label{eq:tanh2}
     tone_{i, t} =
@@ -171,171 +173,174 @@ which is equivalent to Equation \ref{eq:tanh2}:
     },
 \end{equation}
 
-where $tone_{i, t}$ is the current normalized exponentially smoothed tone on topic $i$ at time $t$.
-
-As a result of continuous operation of the Feature Caching Mechanism, a matrix of accumulative topic tonalities
-is formed and updated at each arrival of a textual “tick”. While stock exchange data (Open, High, Low, Close,
-Volume and indicators) are absent, this time series accumulates “market sentiment” signals. As soon as a new
-time series of stock exchange measurements comes into the system (taking into account the network delay $\delta$),
-the accumulated and normalized tones are concatenated with price and indicator data and passed to the Predictive
-Model for joint processing.
-
-The dynamic process of the mechanism is illustrated in the Image \ref{fig:feature_caching_mechanism}. At the input
-moment, the cache is initialized with zero values, then it is updated with the first formula at each arrival
-of textual evaluation, after which it is normalized with a hyperbolic tangent. When a trigger is reached --- moment
-$t$ or stock data arrives at moment $t+\delta$ --- the merged time series is passed on.
+где $tone_{i, t}$ --- текущая нормированная экспоненциально сглаженная тональность по теме
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\linewidth]{img/feature_caching_mechanism.png}
-    \caption{Dynamic representation of OTC data synchronization using Feature Caching Mechanism.}
+    \caption{Динамическая репрезентация сихронизации внебиржевых данных при помощи FCM на минутном свечевом интервале.}
     \label{fig:feature_caching_mechanism}
 \end{figure}
 
-Thus, the Feature Caching Mechanism performs the following functions: converts irregular textual events
-into a continuous multidimensional time series, applies tone smoothing and scaling adequate to financial
-realities, and guarantees synchronization with stock exchange data. This ensures consistency and stability
-of input features in the Predictive Model and contributes to the accuracy of financial asset value forecasting.
+Таким образом, FCM выполняет следующие функции: преобразует нерегулярные текстовые
+события в непрерывный многомерный временной ряд, применяет адекватное финансовым реалиям сглаживание и масштабирование
+тональностей, а также гарантирует синхронизацию с биржевыми данными. Это обеспечивает согласованность и стабильность
+входных признаков в предиктивной модели и способствует повышению точности прогнозирования стоимости финансовых активов.
 
-\subsubsection{Predictive Model}
-In the proposed hybrid architecture, we aim to combine the advantages of convolutional layers for local feature
-extraction and recurrent modules for modeling long-range dependencies, while providing adaptive fusion of quantitative
-and qualitative signals. The input is a multivariate time series of length $T$, in which each time step t corresponds
-to a vector $x_t = [x_t^{\rm price}, x_t^{\rm ind}, x_t^{\rm sent}]$, where $x_t^{\rm price}\in\mathbb{R}^{C_p}$ contains
-OHLCV, $x_t^{\rm ind}\in\mathbb{R}^{C_i}$, and $x_t^{\rm sent}\in\mathbb{R}^{C_s}$ is the set of sliding and smoothed
-values of news tones.
+\subsubsection{Предиктивная модель}
+В предлагаемой гибридной архитектуре мы стремимся объединить преимущества свёрточных слоёв для локального
+выделения признаков и рекуррентных модулей для моделирования длительных зависимостей, одновременно
+обеспечив адаптивное слияние количественных и качественных сигналов. На вход подаётся многомерный
+временной ряд длины $T$, в котором каждому временному шагу $t$ соответствует вектор
+$x_t = [x_t^{\rm price}, x_t^{\rm ind}, x_t^{\rm sent}]$, где $x_t^{\rm price}\in\mathbb{R}^{C_p}$
+содержит OHLCV, $x_t^{\rm ind}\in\mathbb{R}^{C_i}$, а $x_t^{\rm sent}\in\mathbb{R}^{C_s}$ ---
+набор скользящих и сглаженных значений тональностей новостей.
 
-The data is first split into three branches: Price, Indicator, and Sentiment. Each branch undergoes two basic levels
-of processing. At the first level, in each branch, the sequence $\{x_t^{(\cdot)}\}_{t=1}^T$ is passed through
-a 1D convolution with small kernels and pooling operations (Equation \ref{eq:relu_pooling})
+Сначала данные разбиваются на три ветви: «Price», «Indicator» и «Sentiment». Каждая ветвь проходит два
+базовых уровня обработки. На первом уровне в каждой ветви последовательность $\{x_t^{(\cdot)}\}_{t=1}^T$
+пропускается через одномерную свёртку с небольшими ядрами и операциями пулинга (Формула \ref{eq:relu_pooling})
 
 \begin{equation}\label{eq:relu_pooling}
     y^{(\ell+1)}_{t} = \mathrm{ReLU}\bigl(W^{(\ell)} * y^{(\ell)}_{t} + b^{(\ell)}\bigr), \\
     y^{(\ell+\tfrac12)}_{t} = \max\bigl(y^{(\ell+1)}{t},\,y^{(\ell+1)}_{t+1}\bigr).
 \end{equation}
 
-where the symbol $*$ denotes time convolution, the activation function $\mathrm{ReLU}$ is defined as follows
-(Equation \ref{eq:relu}):
+где символ $*$ обозначает свёртку по времени, функция активации $\mathrm{ReLU}$ определяется следующим образом (Формула \ref{eq:relu}):
 
 \begin{equation}\label{eq:relu}
     \mathrm{ReLU}(x)=\max(0, x).
 \end{equation}
 
-The max pooling operation then halves the time dimensionality. This sequence allows the initial layers to identify
-local patterns within each flow, be it short price swings, indicator pulses, or sentiment fluctuations.
+Затем операция max пулинга сокращает временную размерность вдвое. Такая последовательность позволяет
+в начальных слоях выделить локальные шаблоны внутри каждого потока, будь то короткие ценовые колебания,
+импульсы индикаторов или флуктуации сентимента.
 
-Next, the output of the pooling in each branch is trained by a recurrent LSTM, which models the accumulation
-and forgetting of information taking into account long time dependencies. Let $h_t$ and $c_t$ be the hidden state
-and memory cell of the LSTM; their evolution is given by the standard input-, forget-, and output-gate equations.
-This ensures that each branch learns independently to determine which local features are significant for prediction
-at more distant time horizons.
+Далее на выходе пулинга в каждой ветви обучается рекуррентный модуль LSTM, который моделирует накопление
+и забывание информации с учётом длительных временных зависимостей. Пусть $h_t$ и $c_t$ — скрытое состояние
+и ячейка памяти LSTM; их эволюция задаётся стандартными уравнениями входных-, забывающих- и выходных-гейтов. Благодаря
+этому каждая ветвь самостоятельно учится определять, какие локальные признаки значимы для прогнозирования
+на более отдалённых временных горизонтах.
 
-After each branch has produced its hidden state $h_t^{\mathrm{price}}$, $h_t^{\mathrm{ind}}$, $h_t^{\mathrm{sent}}$
-at each time step, an adaptive merging step takes place. For this purpose, the vector concatenation $u_t$ is passed
-through the gate layer (Equation \ref{eq:gate})
+После того как каждая ветвь выдала своё скрытое состояние $h_t^{\mathrm{price}}$, $h_t^{\mathrm{ind}}$, $h_t^{\mathrm{sent}}$
+на каждом временном шаге, происходит этап адаптивного слияния. Для этого векторная конкатенация $u_t$ пропускается через
+гейтовый слой (Формула \ref{eq:gate})
 
 \begin{equation}\label{eq:gate}
     g_t = \sigma\bigl(W_g\,u_t + b_g\bigr).
 \end{equation}
 
-where $\sigma$ is a sigmoid and $g_t\in(0,1)^{\dim u}$ specifies the element-by-element coefficients controlling
-the relative contribution of each flux. The combined representation itself is computed as
+где $\sigma$ --- сигмоида и $g_t\in(0,1)^{\dim u}$ задаёт поэлементные коэффициенты,
+контролирующие относительный вклад каждого потока. Само же объединённое представление вычисляется как
 
 \begin{equation}
     m_t = g_t\odot u_t + (1-g_t)\odot\mu(u_t).
 \end{equation}
 
-where $\mu(u_t)$ can be an averaging or other aggregator of the components of the vector $u_t$. This mechanism
-allows the model to dynamically switch between emphasizing price patterns, indicator signals, or sentiment
-depending on the context of a particular time period.
+где $\mu(u_t)$ может быть усреднением или другим агрегатором компонентов вектора $u_t$.
+Такой механизм позволяет модели динамически переключаться между акцентом на ценовых паттернах,
+индикаторных сигналах или сентименте в зависимости от контекста конкретного временного отрезка.
 
-The merged sequence $\{m_t\}_{t=1}^{T/2}$ is then fed back into the recurrent module merge-LSTM, which, like
-the previous ones, accumulates information about the joint development of the three modalities at a higher
-level of abstraction. Its output is the last hidden state $h_{T/2}^{\mathrm{merge}}$, which contains
-a concise summary of the whole story. To add nonlinearity and an extra dimension of expressiveness, this
-state can be passed through a full-link layer with the $\mathrm{ReLU}$ function, and then through a Dropout
-layer to regularize and mitigate overtraining.
+Объединённая последовательность $\{m_t\}_{t=1}^{T/2}$ затем вновь поступает в рекуррентный модуль
+LSTM, который, подобно предыдущим, аккумулирует информацию о совместном развитии трёх модальностей
+на более высоком уровне абстракции. Его выходом служит последнее скрытое состояние
+$h_{T/2}^{\mathrm{merge}}$, содержащее сжатое резюме всей истории. Для придания нелинейности
+и дополнительного измерения выразительности это состояние может быть пропущено через полносвязный
+слой с функцией $\mathrm{ReLU}$, а затем — через слой Dropout для регуляризации и смягчения переобучения.
 
-Finally, the final layer without activation translates the resulting vector into a univariate prediction
-$\hat y$, which is interpreted as a new price (in regression mode).
+Наконец, заключительный слой без активации переводит полученный вектор в одномерное предсказание
+$\hat y$, которое интерпретируется как новая цена (в режиме регрессии).
 
-Also, it is worth noting that, for purposes of local interpretability of the tone estimates, an important
-role in the architecture is played by the presence of a separate surrogate model that, based on a sampling
-of a number of tones obtained from the FCM, with additional undulations, estimates the contribution
-of each topical tone to the final asset value prediction.
+Также, стоит отметить, что, в целях, локальной интерпретируемости оценок тональности важную роль
+в архитектуре играет наличие отдельной суррогатной модели, которая на основе выборки ряда
+тональностей, полученного из Feature Caching Mechanism, с дополнительными волнениями,
+оценивает вклад каждой тематической тональности в итоговое предсказание стоимости актива.
 
-Thus, the proposed hybrid architecture combines local pattern detection (1D convolutions), the ability
-of LSTM to model long-term dependencies, and an adaptive fusion mechanism that allows dynamically adjusting
-the contribution of price, indicator, and sentiment signals. This provides high forecast accuracy with moderate
-computational complexity and transparency of the model with respect to the attributes used, while remaining
-lighter and more transparent than its transform-based counterparts.
+Таким образом, предложенная гибридная архитектура объединяет локальную детекцию паттернов
+(одномерной свёртки), способность LSTM моделировать длительные зависимости, а также механизм
+адаптивного слияния, позволяющий динамически регулировать вклад ценовых, индикаторных и сентиментальных
+сигналов. Это обеспечивает высокую точность прогнозов при умеренной вычислительной сложности
+и прозрачности модели относительно используемых признаков, при этом оставаясь более лёгкой
+и прозрачной по сравнению с трансформерными аналогами.
 
-\subsubsection{Analytical Graphical User Interface}
+\subsubsection{Аналитический графический интерфейс}
 \label{sec:gui}
-To conclude the description of the FinABYSS architecture, it is necessary to dwell on the key user
-component --- the Analytical Graphical User Interface (GUI). This module accumulates the results
-of all previous stages: from pre-processing of OTC texts and their thematic interpretation in
-the Mixture-of-Topical-Experts block to concatenation with price and indicator series in the predictive
-model. The GUI inputs intermediate and final data, and its task is to bring them into a visual, interactive
-and analytically relevant form. The GUI consists of three interrelated components that implement data
-post-processing, provide deep analysis tools, and visualize semantic relationships between documents.
+В завершение описания архитектуры FinABYSS необходимо остановиться на ключевом пользовательском компоненте ---
+Аналитическом GUI. Этот модуль аккумулирует результаты всех предыдущих этапов:
+от предобработки внебиржевых текстов и их тематической интерпретации в блоке MoTE до конкатенации
+с ценовыми и индикаторными рядами в предиктивной модели. На вход GUI поступают промежуточные и финальные данные,
+а его задача --- привести их в наглядный, интерактивный и аналитически релевантный вид. GUI состоит
+из трёх взаимосвязанных компонент, реализующих постобработку данных, предоставление инструментов
+глубокого анализа и визуализацию семантических связей между документами.
 
-The first component, the Core Postprocessor, is responsible for transforming the “raw” outputs
-of the previous blocks into ordered and compact representations. In the initialization phase, it computes
-the relative frequencies of terms using a BM25-modification of TF-IDF and additional normalization, which
-removes noise and frequently occurring but semantically insignificant tokens (e.g., names of aggregators
-like Zacks). Next, after obtaining embeddings of tokens and the whole document from the domain-adapted
-language model, $n$-grams are ranked by frequency, taking into account the cosine similarity between
-the token vectors and the document vector. To ensure a balance between relevance and subsystem
-diversification, the Maximal Marginal Relevance (MMR) algorithm is applied: when partitioning into bigrams,
-MMR eliminates duplicate or redundantly close in meaning fragments, leaving the most informative ones. For
-example, from raw bigrams “ai” and “ai stocks”, depending on the relative frequency and semantic proximity,
-either “ai” and “stocks”, or only “ai stocks”, or only “ai” can be retained, which increases the homogeneity
-of the final dictionary and reduces redundancy.
+Первый компонент --- ядровой постпроцессор --- отвечает за трансформацию «сырых» выходов предыдущих
+блоков в упорядоченные и компактные репрезентации. На этапе инициализации он вычисляет относительные
+частоты терминов с помощью BM25-модификации TF-IDF и дополнительной нормализации, что удаляет шумовые
+и часто встречающиеся, но семантически незначимые токены (например, названия агрегаторов типа Zacks).
+Далее, после получения эмбеддингов токенов и всего документа из доменно‑адаптированной языковой модели,
+выполняется ранжирование $n$‑грамм по частотам с учётом косинусного сходства между векторами токенов
+и документного вектора. Для обеспечения баланса между релевантностью и диверсификацией подсистемы
+применяется алгоритм MMR: при разбиении на биграммы MMR устраняет дублирующиеся или избыточно близкие
+по смыслу фрагменты, оставляя наиболее информативные. Например, из сырых биграмм «ai» и «ai stocks»
+в зависимости от относительной частоты и семантической близости могут сохраниться либо «ai» и «stocks»,
+либо только «ai stocks», либо только «ai», что повышает однородность итогового словаря и уменьшает
+избыточность.
 
-After MMR is applied, the dictionary is sorted by the resulting frequencies, and the postprocessor receives
-from the Mixture-of-Topical-Experts block the label of the cluster to which the current document belongs.
-Based on this cluster membership, incremental updating of c-TF-IDF statistics is performed: the accumulated
-word frequencies within each cluster are adjusted to reflect new publication, which provides adaptability
-and accounts for the evolution of thematic trends over time and is used for dynamic thematic modeling. Two
-data streams are fed in parallel from the postprocessor: the enriched frequency features and other extracted
-text metadata are sent to the Analytic Toolkit, and the cleaned and clusterred text with embeddings is sent
-to the Semantic Map.
+После применения MMR словарь сортируется по итоговым частотам, и постпроцессор получает от блока MoTE метку
+кластера, к которому принадлежит текущий документ. На основе этой кластерной принадлежности осуществляется
+инкрементальное обновление c‑TF‑IDF статистики: накопленные частоты слов внутри каждого кластера корректируются
+с учётом новой публикации, что обеспечивает адаптивность и учёт эволюции тематических трендов во времени
+и используется для динамического тематического моделирования. Параллельно от постпроцессора поступают два
+потока данных: обогащённые частотные признаки и другие извлечённые метаданные текста направляются
+в аналитический инструментарий, а сам очищенный и классифицированный текст с эмбеддингами --- в Семантическую карту.
 
-The second component --- Analytical Toolkit --- is a set of visual and interactive elements that allow
-the user to explore in-depth the dynamics of thematic trends and their impact on asset prices. Through
-the dashboards it is possible to receive:
+Второй компонент --- Аналитический инструментарий --- представляет собой набор визуальных и интерактивных элементов,
+позволяющих пользователю углублённо исследовать динамику тематических трендов и их влияние на цены активов.
+Через дашборды можно получать:
 
 \begin{itemize}
-    \item historical tone charts for each topic, combined with price series and technical indicators;
-    \item dynamic correlation matrices between news topics sentiments and price movements;
-    \item summary reports on the impact of macro, meso and micro topics on volatility and trend movements;
-    \item aggregated market sentiment indicators (weighted total tone across all topics) with trend lines.
+    \item исторические графики тональностей по каждой теме, совмещённые с ценовыми рядами и техническими индикаторами;
+    \item динамические корреляционные матрицы между темами и движениями цен;
+    \item сводные отчёты по влиянию макро‑, мезо‑ и микротем на волатильность и трендовые движения;
+    \item агрегированные показатели рыночной тональности (взвешенная суммарная тональность по всем темам) с трендовыми линиями.
 \end{itemize}
 
-The toolkit is designed with future expansion in mind: when adding new modalities (images, graph data, audio
-or video streams), modality-specific widgets can be easily integrated — for example, interactive clouds of key
-entities, graphs of relationships, or heat maps of sentiment in voice and video formats.
+Инструментарий разработан с учётом будущего расширения: при добавлении новых модальностей
+(изображения, графовые данные, аудио‑ или видеопотоки) к нему легко интегрируются модальностно‑специфичные
+виджеты --- например, интерактивные облака ключевых сущностей, графы взаимосвязей эмитентов
+или тепловые карты тональностей в голосовых и видео‑форматах.
 
-The third component, Semantic Map, implements two-dimensional visualization of document embeddings. Based
-on a pre-trained DR model, each document representation from the latent space where
-clustering was performed is mapped in $(x,y)$ coordinates. In parallel, an approximate topic predictor
-from the Mixture-of-Topical-Experts block is used: for each document, a hierarchically organized triple
-of topic labels is defined — on macro-, meso- and micro-versions. The color, size, and shape of the markers
-on the map encode cluster membership, sentiment strength, and text volume. This allows to analyze not only
-the spatial neighborhood of publications, but also their topical multilevel structure, quickly identify
-peripheral and central documents, and track the evolution of topical communities.
+Третий компонент --- Семантическая карта --- реализует двумерную визуализацию эмбеддингов документов.
+На основе заранее обученной модели понижения размерности каждое документное представление из латентного
+пространства, где проводилась кластеризация, отображается в координатах $(x,y)$. Параллельно используется
+аппроксимальный предсказатель темы из блока Смеси Тематический Экспертов: по каждому документу
+определяется иерархически организованная тройка тематических меток --- на макро‑, мезо‑ и микроверсиях.
+Цвет, размер и форма маркеров на карте кодируют принадлежность к кластеру, силу тональности и объём
+текста. Это позволяет анализировать не только пространственное соседство публикаций, но и их тематическую
+многоуровневую структуру, быстро выявлять периферийные и центральные документы, а также отслеживать
+эволюцию тематических сообществ.
 
-Together, the GUI creates a single interactive panorama in which the results of the deepest computational
-building blocks — from the Feature Caching Mechanism and Mixture-of-Topical-Experts to the hybrid CNN-LSTM
-predictive model — are transformed into an intuitive and analytically rich tool. The user is able not only
-to view price forecasts, but also to explore in detail the cause-and-effect relationships between media
-signals and market movements.
+В совокупности GUI создаёт единую интерактивную панораму, в которой результаты глубочайших вычислительных блоков
+--- от FCM и MoTE до гибридной CNN-LSTM предиктивной модели — превращаются в интуитивно понятный и аналитически
+ёмкий инструмент. Пользователь получает возможность не просто просматривать прогнозы цен, но и детально исследовать
+причинно‑следственные связи между медиасигналом и движением рынка.
 
-The FinABYSS analytical GUI provides end-to-end visualization and interpretation of system output
-by integrating frequency, topic, and embedding attributes into three interconnected subsystems. The kernel
-postprocessor transforms raw textual and numerical data into compact and representative attributes,
-the analytical toolkit offers flexible tools for in-depth exploration of the impact of topics on asset value,
-and the semantic map provides a visualization of multidimensional embeddings based on hierarchical topics.
-With this combination of technological power and interoperability, the GUI is the final but no less important
-link in the forecasting pipeline, providing transparency, adaptability and visibility for financial experts.
+Аналитический графический интерфейс FinABYSS обеспечивает сквозную визуализацию и интерпретацию выходных данных
+системы, интегрируя частотные, тематические и эмбеддинговые признаки в три взаимосвязанных подсистемы. Ядровой
+постпроцессор трансформирует «сырые» текстовые и числовые данные в компактные и репрезентативные признаки,
+аналитический инструментарий предлагает гибкие средства глубокого исследования влияния тем на стоимость активов,
+а семантическая карта даёт наглядное отображение многомерных эмбеддингов с учётом иерархической тематики.
+Благодаря такому сочетанию технологической мощности и удобства взаимодействия GUI выступает завершающим,
+но не менее важным звеном в конвейере прогнозирования, обеспечивая прозрачность, адаптивность и наглядность
+результатов для экспертов в области финансов.$i$ на момент $t$.
+
+В результате непрерывной работы FCM формируется матрица накопительных тематических тональностей,
+обновляемая при каждом поступлении текстового «тика». Пока биржевые данные (OHLCV и индикаторы)
+отсутствуют, этот временной ряд накапливает сигналы «рыночного сентимента». Как только в систему
+приходит новый временной ряд биржевых измерений (с учётом сетевой задержки $\delta$), накопленные
+и нормированные тональности конкатенируются с ценовыми и индикаторными данными и передаются
+в предиктивную модель для совместной обработки.
+
+Динамический процесс работы механизма проиллюстрирован на Изображении \ref{fig:feature_caching_mechanism}.
+Во входной момент кэш инициализируется нулевыми значениями, затем при каждом поступлении текстовой оценки
+обновляется по первой формуле, после чего нормируется гиперболическим тангенсом. По достижении триггера ---
+момента $t$ или поступления биржевых данных в момент $t+\delta$ --- объединённый временной ряд передаётся дальше.

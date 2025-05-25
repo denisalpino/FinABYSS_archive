@@ -1,205 +1,199 @@
-\subsubsection{Models}
+\subsubsection{Модели}
+Изначально в аналитике финансовых текстов применялись классические рекуррентные \parencite{RNN1986} и сверточные \parencite{CNN1998lecun} сети.
+Рекуррентные сети, включая улучшенные варианты LSTM \parencite{Hochreiter1997LSTM}, способны обрабатывать текст как последовательность,
+моделируя контекст слова на основе предыдущих состояний. Поворотным этапом стал переход к трансформерам \parencite{vaswani2017attention}.
 
-Initially, classical recurrent \parencite{RNN1986} and convolutional \parencite{CNN1998lecun} networks
-have been applied in financial text analytics. RNNs, including improved variants of LSTM \parencite{Hochreiter1997LSTM},
-are able to process text as a sequence, modeling the context of a word based on previous states. The turning
-point was the transition to transformers \parencite{vaswani2017attention}.
 
-\textbf{Bidirectional Transformer Encoder Representations (BERT)}. The BERT model \parencite{devlin2019BERT} proposed
-a bidirectional encoder based on attention mechanisms that allowed the context of a word to be considered
-simultaneously from the left and right. BERT sets a new paradigm: the model is pre-trained on large corpora
-on a masked language modeling (MLM) task and then fine-tuned for specific tasks.
+\textbf{Представления двунаправленного кодировщика трансформера (Bidirectional Transformer Encoder Representations,
+BERT)}. Модель BERT \parencite{devlin2019BERT} предложила двунаправленный кодировщик на основе механизмов внимания,
+что позволило учитывать контекст слова одновременно слева и справа. BERT задаёт новую парадигму: модель предобучается
+на больших корпусах на задаче моделирования маскированного языка (Masked Language Modeling, MLM), а затем тонко
+настраивается под конкретные задачи.
 
-The key architectural feature of BERT is a fully-connected transformer model with a Multi-Head Attention
-mechanism and hidden Feed-Forward layers (BERT-base has 12 layers of 768 neurons each). At the same time,
-BERT is basic limited by the length of the input sequence (up to 512 tokens), which puts limitations
-on the processing of long documents. However, the BERT architecture has proven to be extremely successful
-for fine-tuning: it has proven itself in classification, question-answer systems, and other tasks with
-minimal changes to the output layers.
+Ключевой архитектурной особенностью BERT является полносвязная модель трансформера с механизмом Multi-Head Attention
+и скрытыми слоями Feed-Forward (в BERT-base – 12 слоёв по 768 нейронов). При этом BERT базово ограничен длиной входной
+последовательности (до 512 токенов), что ставит ограничения на обработку длинных документов. Зато архитектура BERT
+оказалась крайне удачной для тонкой настройки: она хорошо зарекомендовала себя в классификации, вопросно-ответных
+системах и других задачах при минимальных изменениях слоёв вывода.
 
-\textbf{Financial BERT (FinBERT)}. Adapted versions of BERT, FinBERT, have been developed for the financial
-domain. Thus, in 2019, a FinBERTv1 [Araci (2019)] model was developed, a pre-trained BERT on the financial
-dataset for the tone analysis task. His model showed improvement in all metrics. FinBERTv1 uses the standard
-BERT architecture but has a specific vocabulary of financial texts --- e.g., terms from reports and news.
-Despite a smaller training sample size than general-purpose models, FinBERTv1's success is primarily due
-to the fact that the model “understands” the context of financial terminology better than general-purpose
-models.
 
-Later, another version of FinBERTv2 was developed by specifically pre-training it on financial corpora
-(news, company reports, financial forums) and using multi-task learning \parencite{Liu2020FinBERT}. This
-allowed FinBERTv2 to learn rich representations tailored to specific financial vocabulary. FinBERTv2
-performs markedly better on financial sentiment tasks and question-answer systems.
 
-Another model, FinBERTv3 \parencite{Yang2020FinBERT, Huang2023FinBERT}, also adapted BERT to finance, but with a focus
-on interpretability and extracting information from analytical reports. The authors develop the idea
-of context-awareness: their FinBERTv1 “integrates financial knowledge” and better “summarizes contextual
-information in financial texts”. In doing so, the model significantly outperforms both dictionary-based
-approaches and classical ML algorithms, as well as convolutional and LSTM models on sentiment classification
-tasks in analyst markup experiments. FinBERTv3 \parencite{Yang2020FinBERT} has a particularly strong
-advantage in handling sentences where other models erroneously label “neutral”-thanks to better
-context sensing, the model detects positive/negative connotations where shallow methods miss.
+\textbf{Финансовый BERT (FinBERT)}. Для финансового домена были разработаны адаптированные версии BERT --- FinBERT.
+Так, в 2019 году была разработана модель FinBERTv1 \parencite{Araci2019FinBERT}, дообученный BERT на финансовом датасете для задачи
+анализа тональности. Его модель показала улучшение всех метрик. FinBERTv1 использует стандартную архитектуру BERT,
+но имеет специфический словарь финансовых текстов — например, термины из отчетов и новостей. Несмотря на размер
+обучающей выборки меньший, чем у моделей общего назначения, Успех FinBERTv1 прежде всего обусловлен тем, что
+модель «понимает» контекст финансовой терминологии лучше, чем модели общего назначения.
 
-Thus, all three FinBERT variants are based on the BERT Transformer architecture, but differ in their training
-strategy: the FinBERTv1 model is simply fine-tuned on a specialized dataset, FinBERTv2 is pre-trained on mixed
-data and tasks, and FinBERTv3 emphasizes financial information extraction, contextual analysis, and interpretation.
-In all cases, financial specialization gives superiority over the “pure” BERT model in the financial domain.
+Позже была разработана другая версия FinBERTv2, специально предобучая её на финансовых корпусах (новости,
+отчёты компаний, финансовые форумы) и используя мультизадачное обучение \parencite{Liu2020FinBERT}. Это
+позволило FinBERTv2 выучить богатые представления, учитывающие специфику финансовой лексики. FinBERTv2
+демонстрирует заметно лучшие результаты на задачах финансового сентимента и вопросно-ответных системах.
 
-\textbf{ModernBERT} is the latest generation of model-based encoders, this architecture retains the idea of BERT but
-includes several enhancements \parencite{Warner2024ModernBERT}. First, ModernBERT is trained on a very large amount of data ($\approx$3 trillion
-tokens) and initially supports sequence lengths up to 8192 tokens, while the original BERT is limited to 512
-tokens. This qualitatively changes the model's abilities --- it can capture a long document context in its
-entirety without special post-processing. Second, the ModernBERT architecture incorporates technological
-innovations: for example, it employs GeGLU gated layers, uses Rotational Position Encoding (RoPE) for better
-position encoding over long distances, and introduces an alternating local-global attention mechanism instead
-of the full attention mechanism of BERT. This allows longer texts to be processed more efficiently in terms
-of computational resources. In addition, ModernBERT is optimized for speed and memory: it is designed with GPU
-hardware features in mind.
+Еще одна работа — FinBERTv3 \parencite{Yang2020FinBERT, Huang2023FinBERT} --- также адаптировала BERT
+под финансы, но с акцентом на интерпретируемость и извлечение информации из аналитических отчётов. Авторы
+развивают идею учета контекста: их FinBERTv1 «интегрирует финансовые знания» и лучше «резюмирует
+контекстуальную информацию в финансовых текстах». При этом модель значительно превосходит как словарные
+подходы, так и классические алгоритмы машинного обучения, а также свёрточные и LSTM-модели на задачах
+классификации тональности в экспериментах с разметкой аналитиков. Особенно сильным преимуществом FinBERTv3 \parencite{Yang2020FinBERT}
+является обработка предложений, где другие модели ошибочно ставят метку «нейтрально» --- благодаря лучшему
+учёту контекста модель выявляет позитивные/негативные оттенки там, где неглубокие методы промахиваются.
 
-Compared to BERT and its “canonical” variants, ModernBERT achieves new performance records. For example,
-it outperforms BERT on all standard GLUE benchmark tasks (see Section \ref{sec:benchmarks}) and significantly
-improves performance on long context retrieval and search tasks. Its performance is significantly better than
-its competitors on long context tasks. For example, when building ColBERT indexes, ModernBERT has a metric
-of 80.2, compared to only 28.1 for BERT and 69.3 for the previous model with the same context
-\parencite{Warner2024ModernBERT,devlin2019BERT}. At the same time, ModernBERT also processes short contexts
-faster than the previous leading models while saving memory. In other words, ModernBERT represents
-a “new generation” of encoders. Not only is it efficient, but it is specifically tailored for long texts
-and large data sizes.
+Таким образом, все три варианта FinBERT основаны на архитектуре трансформера BERT, но различаются стратегией
+обучения: модель FinBERTv1 просто тонко настроена на специализированном датасете, FinBERTv2 --- предобучена
+смешанных данных и задачах, а FinBERTv3 --- упор сделан на извлечение финансовой информации, контекстный
+анализ и интерпретацию. Во всех случаях финансовая специализация даёт превосходство над «чистой» моделью
+BERT в финансовом домене.
 
-Thus, ModernBERT is an evolutionary step in the encoder architecture. It retains the concept of the BERT
-bidirectional transformer, but adapts it to large-scale data and long sequences. By combining new architectural
-techniques and a huge training corpus, ModernBERT significantly expands the processing capabilities
-of large-volume financial (and any other) texts compared to the original BERT.
+\textbf{ModernBERT} \parencite{Warner2024ModernBERT} --- это новейшее поколение моделей, кодировщиков, эта архитектура сохраняет идею BERT,
+но включает несколько усовершенствований. Во-первых, ModernBERT обучен на очень большом объёме данных ($\approx$3
+триллиона токенов) и изначально поддерживает длину последовательности до 8192 токенов, в то время как исходный
+BERT ограничен 512 токенами. Это качественно меняет способности модели — она может захватывать длинный контекст
+документа целиком без специальной пост-обработки. Во-вторых, архитектура ModernBERT включает технологические
+новшества: так, в ней применены гейтированные слои GeGLU, использованы ротационные позиционные кодировки (RoPE)
+для лучшего кодирования положения на больших расстояниях, а также внедрён чередующийся механизм локально-глобального
+внимания вместо полного механизма внимания у BERT. Это позволяет эффективнее обрабатывать длинные тексты с точки
+зрения вычислительных ресурсов. Кроме того, ModernBERT оптимизирован для скорости и памяти: он спроектирован
+с учётом аппаратных особенностей GPU.
 
-\subsubsection{Techniques}
-\textbf{Fine-tuning.} In modern transformer-based NLP systems, the pre-trained model serves
-as a generalized linguistic kernel, but it is not always ready to provide optimal embedding
-representations for specific tasks. Fine-tuning is an additional learning phase in which
-the already pre-trained model adjusts its internal weights for narrowly targeted goals.
-Fine-tuning leverages the labeled data specifically for the target task (classification,
-regression, etc.). In financial topic modeling, fine-tuning is critical to ensure that
-the model does not simply generate universal representations of text, but emphasizes
-relevant patterns, intensity of financial terms, syntactic constructions, and even
-quantitative mentions to ensure greater accuracy in clustering and predictive modules.
+По сравнению с BERT и его «каноническими» модификациями, ModernBERT достигает новых рекордов эффективности. Так,
+эта модель превосходит BERT на всех стандартных задачах бенчмарка GLUE (см. Раздел \ref{sec:benchmarks}) и значительно
+улучшает показатели в задачах извлечения и поиска по длинным контекстам. Её показатели значительно выше конкурентов
+в задачах с длинным контекстом. Например, при построении индексов ColBERT ModernBERT имеет метрику 80.2, в то время,
+как для BERT она составляет всего 28.1, а для предыдущей модели с аналогичным контекстом --- 69.3. При этом ModernBERT
+также обрабатывает короткий контекст быстрее предыдущих лидирующих моделей, сохраняя при этом экономию памяти
+\parencite{Warner2024ModernBERT, devlin2019BERT}. Иными словами, ModernBERT представляет собой «новое поколение»
+кодировщиков. Он не только эффективен, но и специально заточен под длинные тексты и большие масштабы данных.
 
-One of the most popular downstream tasks is Semantic Textual Similarity (STS) ---
-determining the semantic similarity of two text fragments. Unlike binary classification
-tasks, STS is formulated as a regression task: the model needs to produce a continuous
-similarity score, usually in the range of 0 to 5 \parencite{Cer2017STSB} or 0 to 1
-\parencite{gao2021simcse}.
+Таким образом, ModernBERT — это эволюционная ступень архитектуры кодировщика. Он сохраняет концепцию двунаправленного
+трансформера BERT, но адаптирует её к масштабным данным и длинным последовательностям. Благодаря сочетанию новых
+архитектурных приёмов и гигантского корпуса обучения ModernBERT значительно расширяет возможности по обработке финансовых
+(и любых других) текстов большого объёма по сравнению с оригинальным BERT.
 
-The STS problem places high demands on the quality of embeddings: they must preserve
-subtle semantic nuances while being invariant to syntactic permutations and style
-variations. Thus, a Sentence-BERT architecture was proposed, where two BERT-network
-instances exchange gradients via a Siamese configuration and their output vectors are
-compared by cosine distance, which has significantly accelerated and improved STS
-\parencite{SBERT2019} estimation.
+\subsubsection{Техники}
+\textbf{Тонкая настройка.} В современных NLP-системах, основанных на трансформерах, предобученная модель служит
+обобщённым языковым ядром, однако она не всегда готова давать оптимальные представления эмбеддингов для конкретных
+задач. Тонкая настройка представляет собой дополнительную фазу обучения, в ходе которой уже предобученная модель
+корректирует свои внутренние веса под узконаправленные цели. Тонкая настройка задействует размеченные данные
+именно для целевой задачи (классификация, регрессия и т. д.). В финансовом тематическом анализе тонкая настройка
+критична для того, чтобы модель не просто генерировала универсальные представления текста, а акцентировала внимание
+на релевантных паттернах, интенсивности финансовых терминов, синтаксических конструкциях и даже количественных
+упоминаниях, что обеспечивает большую точность кластеризации и прогнозных модулей.
 
-Thus, fine-tuning the embedding model on STS plays a key role in constructing a payplane
-where DR and clustering models are combined. Fine-tuning ensures
-embeddings in which local and global semantic relations are aligned in such a way that
-both nonlinear DR preserves relevant neighborhoods and density
-clustering automatically extracts topic associations without excessive noise.
+Одной из наиболее востребованных downstream-задач является оценка семантичесой схожести текстов (Semantic Textual
+Similarity, STS) --- определение смыслового сходства двух текстовых фрагментов. В отличие от бинарных задач классификации,
+STS формулируется как задача регрессии: модели требуется выдать непрерывную оценку близости, обычно в диапазоне
+от 0 до 5 \parencite{Cer2017STSB} или от 0 до 1 \parencite{gao2021simcse}.
 
-\textbf{Domain-Adaptive Pretraining (DAPT).}  In current LLM practice, one-time pre-training
-on extensive corpus-wide data is proving to be insufficient. DAPT is an additional phase
-of pre-training on target domain texts, preceding the fine-tuning phase on a particular
-task \parencite{gururangan2020DAPT}.
+STS-задача предъявляет высокие требования к качеству эмбеддингов: они должны сохранять тонкие семантические нюансы
+и одновременно быть инвариантны к синтаксическим перестановкам и стилевым вариациям. Так, была предложена архитектура
+Sentence-BERT, где два экземпляра BERT-сети обмениваются градиентами через сиамскую конфигурацию, а их выходные векторы
+сравниваются по косинусному расстоянию, что позволило значительно ускорить и улучшить оценку STS \parencite{SBERT2019}.
 
-Unlike classical fine-tuning, in which the model merely adjusts the weights in the last
-layers to fit a particular dataset and task, DAPT extends the original language modeling
-task by allowing the model to “refresh” and deepen its understanding of the lexicon, syntax,
-and semantics of a specific domain --- e.g., financial publications. This incremental build-up
-of pre-training demonstrates significant quality gains on domain-specific tasks both when
-marked-up data is scarce and when it is abundant.
+Таким образом, тонкая настройка эмбеддинговой модели на STS играет ключевую роль в построении пайплайна, где комбинируются
+модели понижения размерности и кластеризации. Тонкая настройка обеспечивает эмбеддинги, в которых локальные и глобальные
+семантические связи выстроены таким образом, чтобы и нелинейное понижение размерности сохраняло релевантные соседства,
+и плотностная кластеризация автоматически выделяла тематические объединения без избыточного шума.
 
-Based on the calculations, DAPT provides on average a 4\% increase in benchmarks on a relative
-scale compared to the baseline model, which was not domain-specific. This figure is quite significant,
-considering that for some specific tasks the gains can be as high as 20\% \parencite{gururangan2020DAPT}.
+\textbf{Доменно-адаптированное предобучения (Domain-Adaptive Pretraining, DAPT).} В современной практике работы с
+LLM оказывается недостаточным одноразовое предобучение на обширных общекорпусных данных. DAPT представляет собой
+дополнительную фазу предобучения на текстах целевого домена, предшествующую этапу тонкой настройки на определенной
+задаче \parencite{gururangan2020DAPT}.
 
-The need for domain adaptation is particularly evident in the financial sector: generic corpora
-such as BookCorpus \parencite{BookCorpus2015} or Wikipedia \parencite{WikiText2017} do not
-capture the terminology, metaphors and stylistic patterns of press releases, analyst reports
-and stock news. Numerous studies have confirmed the advantages of DAPT in specialized fields.
-For example, SciBERT developers have demonstrated that pre-training BERT on a corpus
-of scientific articles leads to improved performance on the tasks of scientific entity
-extraction and article classification by discipline, providing up to 2-3 points increase
-in F1 metrics compared to the baseline \parencite{SciBERT2019} model. Similarly, BioBERT adapted
-to biomedical text improved the accuracy of extracting medical terms and relations by 10-20\%
-compared to the baseline BERT \parencite{BioBERT2020}.
+В отличие от классической тонкой настройки, при которой модель лишь корректирует веса в последних слоях под конкретный
+датасет и задачу, DAPT продлевает исходную задачу языкового моделирования, позволяя модели «освежить» и углубить своё
+представление о лексике, синтаксисе и семантике специфического домена --- например, финансовых публикаций. Такое поэтапное
+наращивание преобучения демонстрирует существенные приросты качества на доменных задачах как в условиях дефицита
+размеченных данных, так и при их изобилии.
 
-In the financial domain, domain adaptation allows LLMs to better capture the nuances of mentions
-of stocks, interest rates and regulatory terms, which together with the topic clustering task
-improves the quality of embeddings and makes the output representations more “legible” in subsequent
-clustering by HDBSCAN. Thus, DAPT acts as a “bridge” between general language knowledge and the needs
-of the subject domain, allowing for a significant improvement in results on domain-specific tasks.
+Исходя из расчетов, DAPT в среднем обеспечивает прирост бенчмарков на 4\% в относительной шкале по сравнению с базовой
+моделью, которая не была адаптирована под определенный домен. Данная цифра является весьма весомой, учитывая, что
+для некоторых специфичных задач прирост может составлять вплоть до 20\% \parencite{gururangan2020DAPT}.
 
-\textbf{Fusion Mechanisms.} In multimodal and multicomponent systems, the fusion mechanism is responsible
-for combining information from different sources or representations, enabling joint processing
-of heterogeneous signals. There are three commonly accepted mechanisms for multimodal data fusion.
+Необходимость доменной адаптации особенно очевидна в финансовом секторе: общие корпуса, такие как BookCorpus \parencite{BookCorpus2015}
+или Wikipedia \parencite{WikiText2017}, не отражают терминологию, метафоры и стилистические паттерны пресс-релизов, аналитических отчётов
+и биржевых новостей. Множество исследований подтвердило преимущества DAPT в специализированных областях. Так,
+разработчики SciBERT продемонстрировали, что предобучение BERT на корпусе научных статей приводит к улучшению
+показателей на задачах извлечения научных сущностей и классификации статей по дисциплинам, обеспечивая рост
+F1-метрики до 2-3 пунктов по сравнению с базовой моделью \parencite{SciBERT2019}. Аналогично BioBERT, адаптированный
+к биомедицинскому тексту, повысил точность извлечения медицинских терминов и отношений на 10-20\% по сравнению
+с исходным BERT \parencite{BioBERT2020}.
 
-The first, Early Fusion, involves feeding all features (stock quotes, technical indicators, and textual embeddings)
-at once into a single CNN-LSTM model \parencite{Karpathy_2014_CVPR, dutt2022shared}. The advantage of the method
-is the ease of implementation and the ability to immediately learn cross-modal dependencies. However, in practice
-Early Fusion is prone to “choking” in the noise of one of the modalities and loses flexibility when dynamically
-estimating the contribution of each modality \parencite{dutt2022shared}.
+В финансовом домене доменная адаптация позволяет LLM лучше улавливать нюансы упоминаний акций, процентных ставок
+и регуляторных терминов, что вкупе с задачей тематической кластеризации повышает качество эмбеддингов и делает
+выходные представления более «разборчивыми» при последующей кластеризации методом HDBSCAN. Таким образом, DAPT
+выполняет роль «моста» между общими языковыми знаниями и потребностями предметной области, позволяя добиться
+значительного улучшения результатов на доменных задачах.
 
-The second method, Late Fusion, combines the predictions of individual channels (each modality is processed by its
-CNN-LSTM branch) only at the final stage \parencite{Karpathy_2014_CVPR, ortega2019multimodal}. This approach is characterized
-by modularity (easy replacement or additional training of a single channel), but it excludes extraction of low-level
-cross-modal patterns and requires training all branches separately, which entails a multiple increase in computational
-resources \parencite{joze2020mmtm}.
+\textbf{Механизм слияния.} В многомодальных и многокомпонентных системах механизм слияния отвечает за объединение
+информации из разных источников или представлений, обеспечивая совместную обработку гетерогенных сигналов.
 
-The third, compromise mechanism, Slow Fusion, provides staged, “slow” merging of links at different layers of the network
-\parencite{feichtenhofer2016convolutional, dutt2022shared}. Slow Fusion approaches Early Fusion for early merging, and Late Fusion
-for late merging. The key advantages of the method are: the balance between the autonomous processing of each modality
-and the possibility of taking into account their interaction, preserving the “purity” of low-level features and
-the flexibility of setting the number and depth of integration stages \parencite{Karpathy_2014_CVPR}. The main disadvantages
-are the difficulty of choosing the optimal fusion level and increased computational costs due to parallel branches
-at early layers, but nevertheless, less than in Late Fusion.
+Первый --- раннее слияние --- предполагает подачу всех признаков (биржевых котировок, технических индикаторов
+и текстовых эмбеддингов) сразу в единую модель CNN‑LSTM \parencite{Karpathy_2014_CVPR, dutt2022shared}. Преимущество
+метода --- простота реализации и возможность немедленно учить кросс‑модальные зависимости. Однако на практике
+раннее слияние подвержен «захлёбыванию» в шуме одной из модальностей и утрачивает гибкость при динамической
+оценке вклада каждой из них \parencite{dutt2022shared}.
 
-\subsubsection{Benchmarks}
+Второй метод --- позднее слияние --- объединяет предсказания отдельных каналов (каждая модальность обрабатывается
+своей CNN-LSTM-ветвью) лишь на завершающем этапе \parencite{Karpathy_2014_CVPR, ortega2019multimodal}.
+Такой подход отличается модульностью (простота замены или дообучения отдельного канала), но исключает
+извлечение низкоуровневых кросс‑модальных закономерностей и требует обучения всех ветвей по‑отдельности,
+что влечет кратное увеличение вычислительных ресурсов \parencite{dutt2022shared}.
+
+Третий, компромиссный механизм --- медленное слияние --- обеспечивает поэтапное слияние каналов
+на разных уровнях сети \parencite{feichtenhofer2016convolutional, dutt2022shared}. Ключевые преимущества метода:
+баланс между автономной переработкой каждой модальности и возможностью учёта их взаимодействия, сохранение
+«чистоты» низкоуровневых признаков и гибкость настройки числа и глубины этапов интеграции \parencite{Karpathy_2014_CVPR}.
+Главные недостатки --- сложность выбора оптимального уровня слияния и повышенные вычислительные затраты из‑за
+параллельных ветвей на ранних слоях, но тем не менее, меньшие нежели при позднем слиянии.
+
+\subsubsection{Бенчмарки}
 \label{sec:benchmarks}
-The General Language Understanding Evaluation (GLUE) benchmark constitutes a standardized framework for assessing the language comprehension
-capabilities of natural language processing (NLP) models \parencite{wang2018GLUE}. It comprises 9 tasks encompassing classification, semantic
-similarity evaluation, and textual entailment recognition. Through the diversity of these tasks, GLUE facilitates the identification
-of models' ability to generalize and effectively transfer learned representations across a range of linguistic challenges.
+Бенчмарк общего пониания языка (General Language Understanding Evaluation, GLUE) представляет собой набор из девяти
+разнообразных задач на понимание естественного языка, предназначенных для оценки и сравнения производительности моделей
+в различных задачах обработки естественного языка (Natural Language Processing, NLP) \parencite{wang2018GLUE}.
+Предоставляя стандартизированную основу, GLUE облегчает разработку моделей, которые хорошо обобщаются при решении
+различных задач, способствуя прогрессу в создании надежных и универсальных систем понимания языка.
 
-The primary components of GLUE include:
+Бенчмарк GLUE представляет собой набор ресурсов для обучения, оценки и анализа систем понимания естественного языка.
+GLUE состоит из:
 
 \begin{itemize}
-    \item \textbf{A suite of nine tasks}, each derived from pre-existing corpora and targeting distinct aspects of language
-    understanding (e.g., linguistic acceptability, sentiment analysis, paraphrase detection).
-    \item \textbf{A diagnostic dataset} for an in-depth evaluation of model performance in capturing various linguistic phenomena.
-    \item \textbf{A public leaderboard and dashboard} that enable continuous tracking of benchmark performance and provide
-    visualization of model results on the diagnostic tasks.
+    \item \textbf{Набор из девяти задач}, на понимание языка по предложениям или парам предложений, созданный на основе
+    существующих наборов данных и отобранный таким образом, чтобы охватить разнообразный диапазон размеров наборов
+    данных, жанров текстов и степеней сложности.
+    \item \textbf{Диагностический набор данных}, предназначенный для оценки и анализа работы моделей в отношении
+    широкого спектра лингвистических явлений, встречающихся в естественном языке;
+    \item \textbf{Публичная таблица лидеров} для отслеживания результатов выполнения эталона и приборная панель
+    для визуализации работы моделей на диагностическом наборе.
 \end{itemize}
 
-Below is a summary table of the key characteristics of the datasets included in the GLUE benchmark:
+Ниже представлена таблица, иллюстрирующая ключевые характеристики датасетов, используемых в GLUE:
 
 \input{tab/glue.tex}
 
-In summary, the GLUE benchmark provides a robust foundation for evaluating both standard and domain-adapted NLP models.
-Its comprehensive design and the inclusion of diverse linguistic tasks allow for a nuanced analysis of model capabilities.
-Following this overview, the FLUE benchmark, which is tailored for the evaluation of models in the financial context,
-will be discussed to further complement the assessment of domain-adaptive pre-training strategies.
+В целом, бенчмарк GLUE представляет собой надежную основу для оценки как стандартных, так и адаптированных к конкретной области моделей NLP.
+Его комплексный дизайн и включение различных лингвистических задач позволяют провести тонкий анализ возможностей модели.
+После этого обзора будет рассмотрен эталон FLUE, предназначенный для оценки моделей в финансовом контексте,
+будет рассмотрен для дальнейшего дополнения оценки доменно-адаптивных стратегий предварительного обучения.
 
-The Financial Language Understanding Evaluation (FLUE) benchmark is a domain-specific analog to the GLUE benchmark,
-tailored specifically for the financial domain \parencite{FLANG2022FLUE}. This benchmark was developed very recently based
-on 5 diverse datasets. Its creation was driven by the need to evaluate models capable of effectively processing
-financial texts, as standard general-purpose datasets often fail to capture the unique characteristics of financial
-lexicon and the specific tasks inherent to this domain.
+Бенчмарк Financial Language Understanding Evaluation (FLUE) представляет собой аналог бенчмарка GLUE, но специализированный
+под домен финансов \parencite{FLANG2022FLUE}. Данный бенчмарк был создан совсем недавно на основе 5 разнообразных датасетов.
+Его разработка обусловлена необходимостью оценки моделей, способных эффективно обрабатывать финансовый текст, поскольку
+стандартные универсальные наборы данных зачастую не отражают специфические особенности финансовой лексики и задач,
+присущих данной области.
 
 \input{tab/flue.tex}
 
-FLUE covers 5 distinct financial tasks, which allow for a comprehensive evaluation of model performance across various aspects
-of financial language. The statistics presented in Table~\ref{tab:FLUE} demonstrate the scale and diversity of the included datasets.
-Moreover, all datasets that comprise FLUE are characterized by low ethical risks and do not contain confidential information regarding
-any organization or individual. In addition, explicit consent was obtained from the authors of each dataset prior to their inclusion
-in the benchmark, underscoring its legitimacy and ethical soundness.
+FLUE охватывает 5 различных финансовых задач, что позволяет проводить комплексную оценку качества моделей на разнообразных
+аспектах финансового языка. Статистика, представленная в Таблице \ref{tab:FLUE}, демонстрирует величину и разнообразие датасетов.
+При этом все датасеты, входящие в состав FLUE, характеризуются низким уровнем этических рисков и не содержат конфиденциальной
+информации ни о каких организациях или отдельных лицах. Дополнительно, для включения каждого датасета в бенчмарк был получен
+соответствующий запрос на согласие авторов, что подчеркивает его легитимность и корректность с точки зрения этики.
 
-The emergence of the FLUE benchmark is driven by the necessity to standardize the evaluation of models in the field of financial
-language understanding. The financial sector imposes unique requirements for processing textual data, such as high terminological
-complexity, market dynamism, and specific tasks (e.g., sentiment analysis of news headlines, information extraction, etc.). These
-factors have led to the creation of a heterogeneous set of tasks unified within FLUE, thereby enabling a holistic assessment
-of different models. Thus, FLUE serves as an essential tool for researchers, facilitating objective model comparison
-and the identification of areas for further improvement in financial NLP approaches.
+Возникновение бенчмарка FLUE продиктовано потребностью стандартизировать оценку моделей в области финансового понимания языка.
+Финансовая сфера предъявляет особые требования к обработке текстовых данных: высокая терминологическая сложность, динамичность
+рынка, специфические задачи (например, анализ тональности новостных заголовков, извлечение информации и другие). Именно эти факторы
+способствуют формированию разнородного набора задач, объединённых в FLUE, что позволяет всесторонне оценивать эффективность различных
+моделей. Таким образом, FLUE служит важным инструментом для исследователей, способствуя объективному сравнению моделей и выявлению
+областей для дальнейшего совершенствования подходов в финансовом NLP.

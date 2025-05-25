@@ -2,11 +2,17 @@
 \usepackage[left=30mm, top=20mm, right=15mm, bottom=20mm,nohead, includefoot,footskip=35pt]{geometry}
 
 % Язык, кодировка, шрифт
+\usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage[english]{babel}
+\usepackage[russian,english, main=russian]{babel}
 %\renewcommand{\rmdefault}{Tempora-TLF}
-\usepackage{mathptmx}
+\sloppy % Чтобы строки не вылезали за края
+\renewcommand{\rmdefault}{Tempora-TLF}
+
+% Чтобы работал T2A
+\renewcommand{\sfdefault}{cmss}
+%\renewcommand{\rmdefault}{cmr}
+\renewcommand{\ttdefault}{cmtt}
 
 \usepackage[
     backend=biber,
@@ -43,7 +49,7 @@
 % Раздел: 12pt, добавляем слово "CHAPTER"
 \titleformat{\section}
 {\fontsize{12}{12}\bfseries}{
-\hspace{-1.5mm}CHAPTER \thesection. \hskip-1em}{1em}{}
+\hspace{-1.5mm}ГЛАВА \thesection. \hskip-1em}{1em}{}
 % Подраздел: 12pt
 \titleformat{\subsection}
 {\fontsize{12}{12}\bfseries}{\hspace{-0.2mm}\thesubsection}{1em}{}
@@ -53,7 +59,7 @@
 \renewcommand{\cftaftertoctitle}{\hfill}
 
 % Слово "Глава" в содержании
-\renewcommand{\cftsecpresnum}{CHAPTER\space}
+\renewcommand{\cftsecpresnum}{ГЛАВА\space}
 \newlength\mylength
 \settowidth\mylength{\cftsecpresnum}
 \addtolength\cftsecnumwidth{\mylength}
@@ -142,8 +148,6 @@
 
 % Для коректной работы H в фигурах и ссылок на фигуры
 \usepackage{float}
-
-\usepackage{hyperref}
 
 \newcommand{\argmax}{\operatornamewithlimits{argmax}}
 \newcommand{\argmin}{\operatornamewithlimits{argmin}}
