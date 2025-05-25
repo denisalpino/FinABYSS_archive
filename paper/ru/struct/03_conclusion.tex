@@ -1,47 +1,101 @@
-\textbf{Disparity in Access to Financial Resources.} During the study, it was found that there exists a significant barrier for individual
-researchers who lack the financial resources required for expensive data collection, infrastructure rental, and the time needed to develop
-a system entirely from scratch.
+Настоящая работа затрагивает одну из наиболее перспективных и в то же время сложных задач современной
+финансовой аналитики --- интерпретируемое  прогнозирование стоимости активов с точки зрения теории
+эффективного рынка на основе аспектно-ориентированного анализа новостного потока с применением
+современных архитектур глубокого обучения. Стремительное развитие LLM, а также их применение в задачах
+финансовой аналитики продемонстрировали существенный прогресс по сравнению с классическими подходами,
+однако одновременно обозначили ряд нерешённых проблем, касающихся как архитектурных ограничений
+моделей, так и дефицита специализированных данных и средств интерпретации результатов. В рамках
+настоящего исследования была предпринята попытка интеграции нескольких современных парадигм (DAPT,
+ABSA, DTM, гибридная кластеризация и др.) в единое аналитическое решение с учётом специфики финансового
+домена и требований к прозрачности модели.
 
-The financial community — which includes news outlets, data aggregators, professional traders, and investment funds — often does not facilitate
-the development of publicly available tools for extracting value from financial instruments. On the contrary, several market participants deliberately
-create additional obstacles to free data access, while failing to utilize existing resources efficiently. Examples include:
+Ключевым результатом работы стало проектирование и реализация прикладной архитектуры, позволяющей
+обрабатывать длинные финансовые тексты (до 8192 токенов) с учётом их семантической и аспектной структуры.
+Для этого была задействована новейшая архитектура ModernBERT, обладающая рядом существенных преимуществ
+по сравнению с предыдущими версиями FinBERT и BERT. Среди них — повышенное контекстное окно, ротационные
+позиционные кодировки, чередующийся механизм внимания и оптимизации, ориентированные на работу с большими
+документами. Это позволило обрабатывать не только заголовки или краткие выдержки, как в большинстве
+предыдущих исследований, но и полные статьи, пресс-релизы, аналитические обзоры, а также трансформировать
+семантику длинных текстов в векторные представления, пригодные для кластеризации и последующего анализа.
 
-\begin{itemize}
-    \item \textbf{Infrastructure limitations.} Restrictions imposed by aggregators and news services (e.g., Yahoo! Finance) impede large-scale data collection.
-    \item \textbf{Closed APIs and high tariffs.} Services such as Google Finance and Yahoo! Finance, along with platforms like Twitter and Seeking Alpha,
-    offer limited functionality or charge high fees for access.
-    \item \textbf{Restrictions on access to analytical tools.} Cases such as BloombergGPT illustrate the deliberate concealment of general-purpose tools.
-    \item \textbf{Strict copyright policies.} Tighter copyright conditions result in restricted access to various datasets \parencite{wu2023BloombrgGpt}.
-\end{itemize}
+Одним из наиболее значимых вкладов данной работы является построение пайплайна тематического моделирования,
+в котором аспекты рассматриваются как тематические кластеры, выделяемые в эмбеддинговом пространстве текстов
+с применением методов понижения размерности (UMAP) и иерархической кластеризации на основе плотности
+(HDBSCAN). Такой подход позволяет обойти необходимость ручного определения аспектов и заранее фиксированных
+словарей, что особенно важно в условиях постоянно изменяющейся терминологии, лексики и повестки дня финансового
+домена. В отличие от классического ABSA, в предложенном решении извлечение аспектов осуществляется на уровне
+нескольколатентных тем, что делает систему адаптивной и способной масштабироваться на новые информационные потоки
+без ручной разметки.
 
-Thus, it can be concluded that the financial community contributes to a scarcity of open informational resources by artificially raising
-the barriers to access with the aim of reducing competition and limiting the number of independent market players.
+Разработанная система сочетает  взаимодополняющих компонентов: глубокую эмбеддинговую модель,
+компонент тематической агрегации, кластеризацию текстов, метрики плотностной валидации и визуализатор
+интерактивной семантической карты. Совместное использование этих компонентов обеспечивает не только высокую
+эффективность, но и интерпретируемость, которая является важнейшим требованием в управленческой и финансовой
+аналитике. Например, предложенный механизм генерации названий тем с использованием GPT-4o и ранжирования
+терминов на основе c-TF-IDF и MMR, позволяет наглядно представить, за счёт каких ключевых слов формируется
+та или иная тема, а также какие документы вносят в неё основной вклад.
 
-This issue is not new --- it has been repeatedly highlighted in several studies (including by the creators of FinBERT \parencite{Yang2020FinBERT});
-however, over the past five years the situation has remained virtually unchanged. A crisis also persists in the open-source segment of financial tools.
+В ходе исследования было выявлено и проанализировано несколько существенных ограничений, возникающих
+в процессе построения подобной системы. В частности, отсутствие открытых специализированных корпусов
+финансовых текстов привело к необходимости создания собственного корпуса новостей с Yahoo! Finance, объём
+которого превысил 15 ГБ. Также был зафиксирован ряд технических и теоретических проблем: отсутствие
+консенсуса по методологии семантической дедубликации, трудности с обработкой длинных документов (например,
+отчётов 10-K), а также невозможность справедливого сравнения моделей с помощью существующих бенчмарков,
+основанных на коротких текстах (например, FLUE). Для преодоления этих проблем были предложены авторские
+решения, включая математическую формализацию дедубликации на основе семантического объёма.
 
-Despite the widespread restrictive practices, there are proactive participants in the financial sector who strive to distribute information
-more equitably. For instance, the financial data provider Alpha Vantage\footnote{URL: \url{https://www.alphavantage.co/}} offers a free and open API
-that grants access to a vast array of valuable data, including intraday OHLCV. Although Reddit\footnote{URL: \url{https://www.reddit.com/}} is less
-popular than platform X (ex-Twitter)\footnote{URL: \url{https://x.com/}} in the financial community, it also provides an open API and can serve
-as an alternative channel for publishing announcements, opinions, and insider information.
+Метрики оценки качества кластеризации и тематического моделирования в данной работе также рассматривались
+скрупулёзно. Помимо стандартного коэффициента силуэта, был задействован индекс DBCV --- специализированная
+метрика для оценки кластеров произвольной формы с учётом плотности. Результаты показали, что применение
+DBCV позволяет корректно отразить качество кластеризации в задачах, где классические метрики (например,
+индекс Дэвиса–Болдена, Калински–Харабаша или VIASCKDE ) дают искажённую картину.
 
-In addition, aggregators such as FinURLs\footnote{URL: \url{https://finurls.com/}} and MarketWatch\footnote{URL: \url{https://www.marketwatch.com/}}
-represent important information sources. FinURLs compiles links to historical news from 24 sources over several years. Despite the lack
-of a dedicated API and certain interface inconveniences for data extraction, this resource remains valuable. At the same time,
-MarketWatch boasts a more advanced infrastructure by offering not only links to news articles but also quantitative data, as well as the ability
-to obtain information on specific markets, assets, or indices.
+Особое внимание в работе было уделено не только архитектурной, но и методологической строгости. Этапы
+построения пайплайна были продуманы с учётом требований воспроизводимости и масштабируемости, а также
+потенциальной интеграции с количественными моделями. Поскольку задача аспектного анализа --- это не только
+инструмент понимания текстов, но и средство улучшения прогноза динамики стоимости активов, предлагаемое
+решение нацелено на последующую интеграцию с количественными предикторами. Тем самым работа закладывает
+основу для гибридных подходов к прогнозированию, где сочетаются качественные и количественные источники
+информации. Настоящее исследование является своего рода мостом между новейшими открытиями в области глубокого
+обучения и областью финансов.
 
-Individual yet significant sources, such as the websites of certain companies and government agencies, also deserve attention. For example,
-the SEC\footnote{URL: \url{https://www.sec.gov/}} provides free access to historical financial reports (e.g., 10-K and 10-Q) via an RSS feed,
-thereby promoting more equitable access to information. However, even these open datasets are frequently accompanied by technical challenges:
-precise timestamps are often missing or the website structure is disrupted, which complicates automated data extraction.
+Важным теоретическим вкладом является также обсуждение связи между тематическим моделированием и аспектным
+анализом. В данной работе показано, что аспекты в финансовых текстах могут быть интерпретированы как латентные
+темы, выделяемые с помощью кластеризации в эмбеддинговом пространстве. Это открывает путь к унификации двух
+ранее разрозненных направлений анализа текста — тематического моделирования и аспектного анализа сентимента.
+Такой подход особенно эффективен в условиях отсутствия размеченных данных и высокой изменчивости тематики
+финансовых публикаций. С другой стороны, исследование предлагает новый подход, который позволяет посмотреть
+на определение и саму идею тональности текстов под другим, непредвзятым углом.
 
-It should be noted that nearly all real-time data are available without significant restrictions, as most services promptly provide such information.
-Nevertheless, the collection of both historical and real-time data regularly encounters ethical and copyright issues, which remain an important aspect
-in the practical use of these resources.
+Подводя итоги, можно сформулировать основные достижения работы:
 
-In summary, despite various initiatives aimed at expanding access to financial data, the overall landscape is still characterized by artificially
-high barriers. These restrictions contribute to a shortage of open tools, which in turn reduces market competition and limits opportunities
-for independent researchers. Therefore, the development of methodologies aimed at the free and equitable dissemination of information remains
-an urgent task, requiring a comprehensive approach that takes technical, ethical, and legal aspects into account.
+\begin{enumerate}
+    \item Реализована архитектура интерпретируемой системы аспектно-ориентированного анализа финансовых новостей
+    на основе ModernBERT, UMAP и HDBSCAN.
+    \item Реализован подход к автоматическому извлечению тем (аспектов) без использования словарей и ручной разметки,
+    для обеспечения возможности последующего агрегированием сентимента на уровне тем.
+    \item Проведена детальная предобработка и сбор специализированного корпуса финансовых новостей, с учётом
+    особенностей текстов (длина, дублирование, источники). Корпус исчисляется 1 миллиардом токенов и качественно
+    спроектирован, включая богатые метаданные, что позволяет использовать его в смежных исследованиях.
+    \item Разработан и формализован математический подход к семантической дедубликации, учитывающий ограниченность
+    текстуального сравнения и необходимость анализа семантической уникальности.
+    \item Проанализированы архитектурные преимущества ModernBERT по сравнению с BERT и FinBERT,
+    а также выявлены направления дальнейшего повышения интерпретируемости моделей.
+    \item Разработана высокофункциональная система для аналитики в области семантики финансовых публикаций,
+    которая функционирует в режиме реального времени.
+\end{enumerate}
+
+Несмотря на достигнутые результаты, работа оставляет открытыми ряд направлений для будущих исследований.
+Во-первых, необходимо обучение спроектированной архитектуры, включая экспертов и предиктивную модель,
+с интеграцией временных рядов и количественными признаками для построения полноценного гибридного предиктора.
+Во-вторых, перспективно развитие мультиагентной архитектуры, где модели различного уровня (например,
+специализированные под различные типы документов) взаимодействуют в рамках единого пайплайна, что является
+открытым полем для разработки финансового ассистента для семантического анализа публикаций. В-третьих,
+дальнейшее исследование методов динамического тематического моделирования может позволить более точно
+и интерпретируемо отслеживать эволюцию аспектов во времени, что критически важно в условиях изменчивого
+информационного поля.
+
+В целом, представленная работа закладывает фундамент для системного подхода к финансовому прогнозированию
+с использованием больших языковых моделей в контексте теории эффективного рынка. Комбинация инженерной
+реализации, математического анализа и теоретического обоснования делает предложенное решение не только
+практико-ориентированным, но и значимым с точки зрения научной новизны.
