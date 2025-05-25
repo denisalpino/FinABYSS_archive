@@ -1,15 +1,14 @@
-\subsubsection{Feature Extraction}
-After preprocessing the text corpus and removing background noise, embeddings were extracted
-to accelerate subsequent stages of topic modeling, including DR and clustering.
+\subsubsection{Извлечение векторных представлений}
+После предобработки корпуса текстов и удаления фонового шума, для ускорения последующих этапов тематического моделирования,
+включая обучение моделей понижения размерности и кластеризации, были извлечены их эмбеддинги.
 
-The base ModernBERT model is not optimal for this task, since its vector representations are excessively
-sparse. High sparsity of embeddings degrades clustering quality, particularly for density-based methods
-(e.g., DBSCAN). Although HDBSCAN is more robust to density variations, sparsity still adversely affects
-clustering outcomes.
+Базовая модель ModernBERT не оптимальна для этой задачи, поскольку её векторные представления оказываются чрезмерно разреженными.
+Высокая степень разреженности эмбеддингов ухудшает качество кластеризации, в частности методов, основанных на оценке плотностей
+(например, DBSCAN). Несмотря на более высокую устойчивость HDBSCAN к различиям плотностей, разреженность всё равно негативно
+сказывается на результатах кластерного разбиения.
 
-To address this issue, it is common to fine-tune the model on the STS task.
-In this setting, the model receives a pair of texts and returns a similarity score \parencite{MTEB2023},
-typically computed via cosine distance (Formulation \ref{eq:cos_dist}).
+Чтобы устранить указанную проблему, обычно применяют тонкую настройку модели под задачу STS. При этом модель получает на вход пару
+текстов и возвращает оценку их сходства \parencite{MTEB2023}, чаще всего вычисляемую через косинусное расстояние (Формула \ref{eq:cos_dist}).
 
 \begin{equation}\label{eq:cos_dist}
     D_{\cos}(\mathbf{u}, \mathbf{v})
@@ -17,33 +16,31 @@ typically computed via cosine distance (Formulation \ref{eq:cos_dist}).
                  {\|\mathbf{u}\|_2 \,\|\mathbf{v}\|_2}.
 \end{equation}
 
-STS models consistently produce denser and more informative embeddings.
+Именно STS‑модели демонстрируют наиболее плотные и информативные эмбеддинги.
 
-Accordingly, for the base ModernBERT we evaluated two fine-tuned variants: modernbert-embed from Nomic AI
-\parencite{nomic2024} and gte-modernbert-base from Alibaba \parencite{MGTE2023,MGTE2024}. Evaluation
-employed the Massive Text Embedding Benchmark (MTEB), which spans eight task categories and 58 datasets
-\parencite{MTEB2023}. Results were as follows:
+Так, для базовой модели ModernBERT было рассмотрено 2 тонко настроенные модели --- 'modernbert-embed' от Nomic AI \parencite{nomic2024}
+и `gte-modernbert-base` от Alibaba \parencite{MGTE2023,MGTE2024}. Для оценки данных двух моделей был использован бенчмарк Massive
+Text Embedding Benchmark (MTEB) \parencite{MTEB2023}, охватывающий восемь классов задач и 58 датасетов. По результатам:
 
 \begin{itemize}
-    \item Clustering (12 datasets): gte-modernbert-base outperformed modernbert-embed by 1.5 percentage
-    points (44.98\% vs. 44.47\%).
-    \item STS (10 datasets): Their performances were comparable (81.78\% vs. 81.57\%).
-    \item Overall (eight tasks, 56 datasets): gte-modernbert-base led by 1.76 percentage points on average
-    (64.38\% vs. 62.62\%).
+    \item В задаче кластеризации на 12 датасетах 'gte-modernbert-base' превзошла 'modernbert-embed' на 1.5 процентных пункта (44.98\% против 44.47\%).
+    \item В задаче STS на 10 датасетах их результаты близки (81.78\% и 81.57\% соответственно).
+    \item В среднем по всем восьми задачам на 56 датасетах 'gte-modernbert-base' опережает 'modernbert-embed' на 1.76 процентных
+    пункта (64.38\% против 62.62\%).
 \end{itemize}
 
-Consequently, gte-modernbert-base from the sentence\_transformers library was chosen for embedding extraction
-\parencite{SBERT2019}. Instead of using the [CLS] token, a more advanced Mean Pooling technique was applied,
-averaging token embeddings across the sequence (Formulation \ref{eq:mean_pooling}).
+В связи с этим для извлечения эмбеддингов была выбрана модель gte-modernbert-base из библиотеки 'sentence\_transformers' \parencite{SBERT2019}.
+При получении эмбеддингов для всего документа вместо токена [CLS] применялась более продвинутая техника --- Mean Pooling, которая заключается
+в усреднении значений эмбеддингов по всем токенам последовательности (Формула \ref{eq:mean_pooling}).
 
 \begin{equation}\label{eq:mean_pooling}
     \mathbf{h_{mean}}=\frac{1}{T}\sum^T_{t=1}\mathbf{h}_{t}.
 \end{equation}
 
-where $T$ is the tokenized sequence length and $\mathbf{h}_t$ denotes the embedding of the $t$-th token.
+где $T$ — длина токенизированной последовательности, а $\mathbf{h}_t$ — эмбеддинг $t$-го токена.
 
-To accelerate the training of DR and clustering models, the embeddings were
-first reduced to the unit $L_2$-norm (Formulation \ref{eq:l2_norm}):
+Для оптимизации скорости обучения моделей понижения размерности и кластеризации,
+эмбеддинги предварительно приводились к единичной $L_2$-норме (Формула \ref{eq:l2_norm}):
 
 \begin{equation}\label{eq:l2_norm}
     \widehat{\mathbf{u}}
@@ -52,10 +49,8 @@ first reduced to the unit $L_2$-norm (Formulation \ref{eq:l2_norm}):
     \|\mathbf{u}\|_2 = \sqrt{\sum_{i=1}^{n} u_i^2}.
 \end{equation}
 
-Such preprocessing allows us to use the GPU-optimized Euclidean distance metric (Equation \ref{eq:euclidean})
-when training the DR model, without having to repeat the $L_2$-norm computation that
-occurs when computing the cosine distance metric at each iteration of the hyperparameter optimization.
-so that Euclidean distance could be used for both DR and clustering.
+Подобная предобработка позволяет пользоваться GPU-оптимизированной евклидовой метрикой расстояния (Формула \ref{eq:euclidean}) при обучении модели DR,
+не повторяя при этом на каждой итерации оптимизации гиперпараметров вычисление $L_2$-нормы, которое происходит при вычислении метрики косинусного расстояния.
 
 \begin{equation}\label{eq:euclidean}
     D_{2}(\mathbf{u}, \mathbf{v})
@@ -63,10 +58,9 @@ so that Euclidean distance could be used for both DR and clustering.
     = \sqrt{\sum_{i=1}^{n} \bigl(u_i - v_i\bigr)^2}.
 \end{equation}
 
-Thus, after computing the $L_2$-norm and the Euclidean distance, we can actually, in a sense, be considered
-to be working with the cosine distance, since the reduced measure becomes monotonically related to the cosine
-and reflects the same order of proximity of the points (Equation \ref{eq:euclidean_after_l2_norm}), but all
-computations are accelerated by GPU optimization.
+Таким образом, после вычисления $L_2$-нормы и евклидова расстояния, мы, на самом деле, в некотором смысле можно считать, что мы работаем с косинусным расстоянием,
+так как приведенная мера становится монотонно связанной с косинусным и отражает тот же порядок близости точек (Формула \ref{eq:euclidean_after_l2_norm}),
+однако все вычисления ускоряются за счет GPU-оптимизации.
 
 \begin{equation}\label{eq:euclidean_after_l2_norm}
     D_{2}\bigl(\widehat{\mathbf{u}}, \widehat{\mathbf{v}}\bigr)
@@ -74,133 +68,145 @@ computations are accelerated by GPU optimization.
     = \sqrt{2\,\bigl(1 - \widehat{\mathbf{u}}\!\cdot\!\widehat{\mathbf{v}}\bigr)}.
 \end{equation}
 
-To build and train the DR and clustering algorithms, a training subsample of 200,000 embeddings
-and associated metadata was generated, which is approximately 16\% of the entire corpus. This size of the training
-subsample was chosen based on the available computational resources. Thus, 200,000 embeddings were used to select
-the optimal hyperparameters, while the remaining 1,050,000 embeddings were reserved for the validation and inference
-phases. At the same time, before inference, the pipeline of DR and clustering models were trained
-on the entire corpus with a linear increase in hyperparameter values for the HDBSCAN algorithm, the choice of which
-is conditioned in \hyperref[sec:drc]{Section 2.3.2}.
+Для построения и обучения алгоритмов понижения размерности и кластеризации была сформирована
+тренировочная выборка из 200 000 эмбеддингов и сопутствующих метаданных, что составляет приблизительно
+16\% от всего корпуса. Такой объем обучающей подвыборки был выбран, исходя из доступных вычислительных
+ресурсов. Так, 200 000 эмбеддингов использовались для подбора оптимальных гиперпараметров,
+а остальные 1 050 000 эмбеддингов были зарезервированы для этапов валидации и инференса.
+При этом, перед инференсом конвейер моделей понижения размерности и кластеризации были обучены
+на всем корпусе с линейным увеличением значений гиперпараметров для алгоритма HDBSCAN, выбор которого
+обуславливается в \hyperref[sec:drc]{Секции 2.3.2}.
 
-Moreover, mixed precision (float16) and the FlashAttention mechanism \parencite{flash2022attention} were
-employed during embedding extraction, substantially reducing computational resource requirements and runtime.
+Кроме того, при извлечении эмбеддингов была задействована смешанная точность (float16) и ускоренный
+механизм внимания FlashAttention \parencite{flash2022attention}, что существенно сократило требования
+к вычислительным ресурсам и время обработки.
 
-\subsubsection{UMAP and HDBSCAN}
+\subsubsection{UMAP и HDBSCAN}
 \label{sec:drc}
-Thus, after assembling the embedding sample, we proceeded to experiments with DR and clustering
-models, performing their joint optimization. This approach reflects the multi-criteria nature of the task: it is necessary
-not only to preserve the structural (global) and local relationships from the original 768-dimensional space, but also
-to ensure that embeddings remain separable (“clusterable”) in a low-dimensional projection suitable for two-dimensional
-visualization.
+Итак, после формирования выборки эмбеддингов мы приступили к экспериментам с моделями DR и кластеризации,
+проводя их совместную оптимизацию. Такой подход обусловлен многокритериальным характером задачи: требуется
+не только сохранить структурные (глобальные) и локальные взаимосвязи из исходного 768-мерного пространства,
+но и обеспечить разделимость («кластерность») эмбеддингов в низкоразмерной проекции, пригодной для визуализации на плоскости.
 
-As key requirements we identified:
+В качестве ключевых условий было обозначено:
 
 \begin{enumerate}
-    \item Preservation of cluster structure. Embeddings after DR must remain separable,
-    preserving groupings by semantic and topical similarity.
-    \item Suitability for two-dimensional visualization. The resulting space must support clear and interpretable
-    planar display.
+    \item Сохранение кластерной структуры. Эмбеддинги после понижения размерности должны оставаться разделимыми,
+    то есть сохранять группировку по смыслу и тематике.
+    \item Готовность к двумерной визуализации. Итоговое пространство должно быть пригодно для наглядного
+    отображения на плоскости без потери интерпретируемости.
 \end{enumerate}
 
-To search simultaneously for optimal hyperparameters of both DR algorithms and clustering methods,
-we employed a unified meta-optimization process.
+Для одновременного поиска оптимальных гиперпараметров выбора алгоритмов понижения размерности
+и методов кластеризации использовался единый мета‑процесс.
 
-We used the DBCV index as our optimization metric, since it does not assume any predefined cluster shape (unlike as example
-silhouette coefficient favoring spherical or ellipsoidal structures) and effectively evaluates density-based clustering
-methods.
+В качестве критерия оптимальности был принят индекс DBCV, поскольку он не предполагает заранее заданной
+формы кластеров (в отличие от индексов, ориентированных на сферические или эллипсоидальные структуры)
+и эффективно оценивает плотностные методы кластеризации.
 
-As our base clustering algorithm we selected HDBSCAN \parencite{HDBSCAN2013}, which meets two crucial requirements:
+В качестве основы был выбран алгоритм HDBSCAN \parencite{HDBSCAN2013}, отвечающий двум важным требованиям:
 
 \begin{itemize}
-    \item No shape assumptions. Unlike K-Means, HDBSCAN does not assume clusters are Gaussian spheres, which is critical
-    for representing topics.
-    \item Hierarchical, density-based nature. It can identify both large thematic groups and small, highly concentrated niches.
+    \item Отсутствие предположений о форме кластеров. В отличие от K‑Means HDBSCAN не предполагает,
+    что кластеры являются гауссовыми сферами, что критически для представления тем.
+    \item Иерархическая и плотностная природа. Позволяет выявлять как крупные тематические группы,
+    так и мелкие, высококонцентрированные ниши.
 \end{itemize}
 
-Moreover, GPU acceleration of HDBSCAN yielded high processing speed on both large samples and high-dimensional data.
+Кроме того, благодаря реализации на GPU, HDBSCAN показал высокую скорость обработки
+как больших выборок, так и высокоразмерных данных.
 
-Within the HDBSCAN framework, we tuned two key hyperparameters: the minimum number of neighbors --- the count of points
-in a neighborhood required to consider a point a cluster “core” --- and the minimum cluster size --- the threshold number
-of observations for forming a cluster, which allows capturing rare, narrowly topical groups.
+В контексте алгоритма HDBSCAN для оптимизации рассматривается несколько ключевых гиперпараметров.
+Минимальное число соседей --- количество точек в окрестности, необходимое для признания точки «ядром» кластера.
+Минимальный размер кластера --- число наблюдений, определяющее порог для формирования кластера,
+что позволяет учитывать редкие, узкотематические группы.
 
-Pilot experiments revealed the coexistence of very dense regions (“hot topics”) and rare but semantically significant
-clusters. A small minimum cluster size captures these rare topics but also increases the number of micro-clusters,
-some of which lack clear semantic distinction.
+ В ходе пилотных экспериментов было обнаружено, что одновременно существуют плотные области («горячие темы»)
+ и редкие, но значимые по содержанию кластеры. При малом минимальный размер кластера удаётся захватывать
+ редкие темы, однако возрастает число микрокластеров, разделение между которыми семантически не всегда оправдано.
 
-To mitigate this, we considered an $\epsilon$-based cluster-merging technique \parencite{HDBSCAN2020cluster_selection_epsilon},
-consolidating adjacent micro-clusters in high-density regions. However, this approach complicates inference: when new
-observations arrive, $\epsilon$-merging cannot be incrementally updated, necessitating full retraining.
+ Для смягчения этой проблемы рассматривалась техника объединения кластеров по порогу $\epsilon$ \parencite{HDBSCAN2020cluster_selection_epsilon}, позволяющая
+ консолидировать соседние микрокластеры в высококонцентрированных регионах. Однако такой подход усложняет
+ инференс модели: при появлении новых наблюдений $\epsilon$‑объединение не может быть учтено, что вынуждает
+ полностью переобучать модель.
 
-Prioritizing practicality, we therefore abandoned $\epsilon$-merging in favor of smaller minimum cluster sizes, accepting
-some fragmentation while preserving the ability to interpret and agglomerate clusters at higher hierarchical levels.
+ Так как исследование ставит своим приоритетом практичность, было принято решение отказаться от использования
+ $\epsilon$, но использовать меньшие значения минимального размера кластера, принимая некоторую фрагментацию,
+ но сохраняя возможность последующей интерпретации и агломерации кластеров на более высоком уровне иерархии.
 
-Another hyperparameter --- the cluster selection method --- determines whether clusters form based on excess of mass
-or tree leaves. We found that the latter yields finer-grained, more homogeneous groups, and used it for our final
-configuration.
+ Ещё один гиперпараметр --- метод выделения кластеров --- определяет, будут ли они формироваться на основе «избытка массы» или «листьев дерева».
+ Практика показала, что второй вариант даёт более мелкозернистые и однородные группы, что и было избрано для окончательной настройки.
 
-Thus, in the final optimization stage, only two HDBSCAN parameters remained tunable: minimum neighbors and minimum cluster
-size.
+ Таким образом, на финальной стадии оптимизации HDBSCAN оставлены лишь два подлежащих настройке параметра: минимальное
+ число соседей и минимальный размер кластера.
 
-It is noteworthy that, as will be described in \hyperref[sec:architecture]{Section 3.3}, the future architecture assumes
-a fixed number of clusters corresponding to a static number of experts; hence, we employ the cuML implementation of HDBSCAN
-rather than its adaptive variant \parencite{HDBSCAN2022adaptive}.
+ Также стоит отметить, что в архитектуре, описанной в \hyperref[sec:architecture]{Разделе 3.3},
+ планируется фиксированное количество кластеров для статичного числа экспертов,
+ поэтому в качестве базовой реализации используется именно HDBSCAN из cuML,
+ а не его адаптивная версия \parencite{HDBSCAN2022adaptive}.
 
-Turning to DR algorithms, our preliminary selection included t-SNE, PCA, UMAP, TriMap, and PaCMAP,
-with key evaluation criteria of fidelity, the ability to balance local and global relationships, and training time complexity.
-Based on other researchers' experience, UMAP was chosen as the baseline algorithm \parencite{BERTopic2022}.
+ Переходя к алгоритмам понижения размерности, для предварительного отбора рассматривались
+ t-SNE, PCA, UMAP, TriMap и PaCMAP, причём ключевыми критериями были точность, возможность
+ балансировать отображения локальных и глобальных отношений и скорость обучения. Исходя из опыта
+ других исследователей в качестве базового алгоритма для сравнения был выбран UMAP \parencite{BERTopic2022}.
 
-t-SNE was excluded due to its insufficient scalability on large datasets. PCA, although fast as a global approximation,
-did not preserve local structure in the final low-dimensional embedding, and an experiment combining PCA with UMAP fell
-short of standalone UMAP by approximately 37\% in DBCV score. While TriMap and PaCMAP achieved similar performance
-in intermediate dimensions --- and PaCMAP produced a more uniform distribution for two-dimensional visualization ---
-the GPU-accelerated implementation and demonstrated robustness of UMAP in cuML led us to select it as the definitive method
-for both intermediate DR and final 2D projection.
+Так, исключён из-за недостаточной производительности на больших объёмах данных. PCA рассматривался как
+быстрое глобальное приближение, но для конечного понижения размерности не обеспечивает локальную точность.
+Тем не менее, был проведён эксперимент с предварительным применением PCA перед основным алгоритмом,
+направленный на ускорение вычислений. Эксперимент показал, что пайплайн PCA + UMAP уступает по индексу
+DBCV «чистому» UMAP примерно на 37\%, что сделало применение PCA неоправданным.
 
-\subsubsection{Hyperparameters Optimization}
-The model initialization phase was followed by a comprehensive hyperparameter optimization involving seven key parameters:
-five for UMAP (number of neighbors 'n\_neighbors', output space size 'n\_components', minimum distance between points 'min\_dist',
-parameter 'spread' and coefficient 'negative\_sample\_rate') and two for HDBSCAN ('min\_cluster\_size' and 'min\_samples'). Ray Tune
-\parencite{raytune2018liaw} and Optuna \parencite{optuna2019akiba} were tested as frameworks for finding the optimum,
-with an emphasis on a resource-based approach where the 'resource' was the size of the training subsample.
-Experimentally, we selected 5 training stages with shares from 1.5\% to 10\% of the total corpus, which allowed us
-to evaluate the scalability of the methods and the stability of the obtained hyperparameters.
+Дальнейшее сравнение UMAP, TriMap и PaCMAP продемонстрировало схожую точность при проекции в промежуточные размерности,
+однако для окончательной двумерной визуализации PaCMAP оказался предпочтительнее за счёт более равномерного распределения
+кластеров на плоскости. Тем не менее, поскольку для кластеризации на промежуточном этапе была важна возможность GPU-ускоренной
+оптимизации и проверенная устойчивость, выбор пал на UMAP реализованном в cuML \parencite{cuml2020machine}.
 
-In the context of Ray Tune, the BOHB (Bayesian Optimization with HyperBand) scheme
-\parencite{TPEandBO2011bergstra, BOHB2018falkner, hyperband2018li, HPOoverview2015shahriari} was used, but it did not provide
-a proper speed-to-quality ratio when working with UMAP/HDBSCAN. Switching to Optuna, three varieties of “pruners” ---
-mechanisms for early cutoff of unpromising combinations during resource build-up --- were implemented. The first,
-'AdaptiveStablePercentilePruner', removed the worst ones by a predefined percentile in each resource step, the second,
-'CustomPatientPruner', minimized the risk of premature exclusion by cutting off combinations after $n$ consecutive
-unsuccessful steps with gains less than $\delta$, and the third, 'NormalPruner', used Z-statistics
-(Equation \ref{eq:z_score}) and a given percentile of the standard normal distribution ($\mathcal{N}(0, 1)$).
+\subsubsection{Оптимизация гиперпараметров}
+
+После этапа инициализации моделей последовала комплексная оптимизация гиперпараметров, затрагивающая
+семь ключевых параметров: пять для UMAP (число соседей 'n\_neighbors', размер выходного пространства 'n\_components',
+параметры 'min\_dist' и 'spread', коэффициент 'negative\_sample\_rate') и два для HDBSCAN ('min\_cluster\_size' и 'min\_samples').
+В качестве фреймворков для поиска оптимума были апробированы Ray Tune \parencite{raytune2018liaw} и Optuna \parencite{optuna2019akiba},
+причём акцент был сделан на ресурсно-ориентированном подходе, где «ресурсом» выступал размер обучающей подвыборки.
+Экспериментально были выбрано 5 этапов обучения с долями от 1.5\% до 10\% общего корпуса, что позволило
+оценить масштабируемость методов и устойчивость полученных гиперпараметров.
+
+В контексте Ray Tune применялась схема Байесовской оптимизации с HyperBand (BOHB)
+\parencite{TPEandBO2011bergstra, BOHB2018falkner, hyperband2018li, HPOoverview2015shahriari},
+однако она не обеспечила должного соотношения скорости и качества при работе с UMAP/HDBSCAN.
+Переключившись на Optuna, были реализованы три разновидности «прунеров» --- механизмы
+для досрочного отсечения бесперспективных комбинаций при наращивании ресурса.
+Первый, 'AdaptiveStablePercentilePruner', удалял худшие по заранее заданному перцентилю
+в каждом шаге ресурса, второй, 'CustomPatientPruner', минимизировал риск преждевременного исключения,
+отсекая комбинации после $n$ последовательных неудачных шагов с приростом менее $\delta$, а третий,
+'NormalPruner', использовал Z-статистику (Формула \ref{eq:z_score}) и заданный перцентиля стандартного
+нормального распределения ($\mathcal{N}(0, 1)$).
 
 \begin{equation}\label{eq:z_score}
     z\text{-score}=\frac{m - \mathbb{E}[M]}{\mathbb{V}[M]},
 \end{equation}
 
-where $m$ is the current metric and $M$ is the distribution of metrics at this stage.
+где $m$ --- текущая метрика и $M$ --- распределение метрик на данном этапе.
 
-Weighted Cumulative DBCV-index (WCDBCV) became the evaluation metric during the iterations:
+Метрикой оценки в ходе итераций стал взвешенный кумулятивный DBCV-индекс (WCDBCV):
 
 \begin{equation}
     WCDBCV_j=\frac{1}{j\sum_{i=1}^jp_i} \sum_{i=1}^j p_i \cdot DBCV_i,
 \end{equation}
 
-where $j$ is the current resource step and $p_i$ is the fraction of the sample used at the $i$-th step.
+где $j$ — текущий этап ресурса, а $p_i$ — доля выборки, использованная на $i$-м шаге.
 
-Of all combinations, the best performance was demonstrated by the  Tree-structured Parzen Estimator (TPE)
-algorithm \parencite{TPE2023watanabe, TPEandBO2011bergstra, HPOoverview2015shahriari} in conjunction
-with 'AdaptiveStablePercentilePruner', but the quality gain was not significant enough relative
-to the increased computational cost. Therefore, the subsequent hyperparameter search was performed
-without the use of pruning. As a global strategy, a classical TPE with 400 trails was used, half
-of which were performed in a “warm-up” mode of random configurations. An Covariance Matrix Adaptation
-Evolution Strategy (CMAES) \parencite{restartCMAES2005auger, CMAES2024nomura} with an IPOP restart mechanism,
-adaptive learning rate and a preliminary “warm run” based on the 15 best combinations found in the global
-optimization phase \parencite{CMAES2024nomura, lrCMAES2023nomura, restartCMAES2005auger, warmCMAES2021nomura} was
-used to locally fine-tune the emerged promising regions of the hyperparameter space. The budget
-for the local phase was 200 trails, which provided a deep search around already high-performing
-configurations.
+Из всех сочетаний наилучшую эффективность продемонстрировал алгоритм Древовидной оценка Парсена (TPE)
+\parencite{TPE2023watanabe, TPEandBO2011bergstra, HPOoverview2015shahriari} в связке с 'AdaptiveStablePercentilePruner',
+однако прирост качества оказался недостаточно существенным относительно возросших вычислительных затрат.
+В связи с этим последующий поиск гиперпараметров был выполнен без использования прунинга.
+В качестве глобальной стратегии применялся классический TPE с 400 испытаниями, из которых половина
+выполнялась в «разминочном» режиме случайных конфигураций. Для локальной донастройки возникших
+перспективных областей пространства гиперпараметров использовалась адаптивная эволюционная стратегия
+(CMAES) \parencite{restartCMAES2005auger, CMAES2024nomura} с механизмом повторного старта IPOP, адаптивной
+скоростью обучения и предварительным «тёплым запуском» на базе 15 лучших комбинаций, найденных
+на этапе глобальной оптимизации \parencite{CMAES2024nomura, lrCMAES2023nomura, restartCMAES2005auger, warmCMAES2021nomura}.
+Бюджет локальной фазы составил 250 испытаний, что обеспечило глубокий поиск вокруг уже высокоэффективных конфигураций.
 
-As a result of this two-tiered approach — first a broad TPE study, then an in-depth local CMAES
-search --- it was possible to balance the breadth and depth of optimization, improving
-the robustness of the model pipeline.
+В результате такого двухуровневого подхода --- сначала широкого исследования методом TPE, затем углублённого
+локального поиска CMAES --- удалось сбалансировать широту и глубину оптимизации, повысив устойчивость конвейера моделей.

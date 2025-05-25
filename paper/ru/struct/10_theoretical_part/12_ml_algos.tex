@@ -1,251 +1,254 @@
-\subsubsection{Dimensionality Reduction}
-\textbf{Principal Component Analysis (PCA)} is a linear dimensionality reduction (DR) method based
-on the decomposition of the covariance matrix of the original data. Given a zero trait mean,
-it finds the covariance eigenvectors (components) responsible for the maximum variance:
-$\Sigma = X^T X$, $\Sigma w_i = \lambda_i w_i$, the projection of the data $Y = XW_{d'}$
-onto the first $d'$ eigenvectors.
+\subsubsection{Понижение размерности}
+\textbf{Метод главных компонент (Principal Component Analysis, PCA)} является линейным методом
+понижения размерности (dimensionality reduction, DR), основанным на разложении ковариационной
+матрицы исходных данных. При нулевом среднем по признакам он находит собственные векторы
+ковариации (компоненты), отвечающие за максимальную дисперсию:
+$\Sigma = X^T X$, $\Sigma w_i = \lambda_i w_i$, проекцию данных $Y = XW_{d'}$ на первые
+$d'$ собственных векторов.
 
-PCA aims to preserve as much variance of the original data as possible and, as a consequence,
-preserves well the “global” cluster structure \parencite{TRIMAP2019}. In practice, PCA is often
-used as an intermediate step: for example, when dealing with high-dimensional text embeddings
-(several hundred features, e.g., embeddings of dimensionality 768) before non-linear
-DR methods. The use of PCA can significantly reduce the dimensionality
-(down to tens to hundreds of components) and speed up subsequent computations\parencite{huang2022towards}.
+PCA стремится сохранить как можно больше дисперсии исходных данных и, как следствие, хорошо
+сохраняет «глобальную» структуру кластеров \parencite{TRIMAP2019}. На практике PCA часто
+применяется как промежуточный этап: например, при работе с высокоразмерными текстовыми
+эмбеддингами (несколько сотен признаков, например, BERT-эмбеддинги размерности 768) перед нелинейными
+методами понижения размерности. Использование PCA позволяет значительно сократить размерность
+(до десятков --- сотен компонент) и ускорить последующие вычисления \parencite{huang2022towards}.
+
+Однако PCA --- линейный метод, и он не отражает более сложных нелинейных зависимостей, присущих
+текстовым эмбеддингам. Вследствие этого тонкие локальные отношения слов и документов могут
+быть потеряны, хотя общая структура («глобальный ландшафт» данных) при этом чаще всего сохраняется.
+
 
 However, PCA is a linear method, and it does not capture the more complex nonlinear dependencies
 inherent in language embeddings. As a consequence, subtle local word-document relationships
 may be lost, although the overall structure (the “global landscape” of the data) is most often
 preserved.
 
-\textbf{t-distribution Stochastic Meighbor Embedding (t-SNE)} is a nonlinear stochastic method focused
-on preserving local data structure. In high-dimensional space, it computes conditional probabilities
-$p_{j|i} \propto \exp(-|x_i-x_j|^2/2\sigma_i^2)$, reflecting the proximity of neighbors; it then
-symmetrizes them: $p_{ij}=(p_{j|i}+p_{i|j})/2n$. A similar measure (Student's distribution with 1 degree
-of freedom) is given in the low-dimensional mapping. The algorithm optimizes the placement of $Y$ points
-by minimizing the Kullback-Leibler divergence $C = \sum_{i,j} p_{ij}\ln\frac{p_{ij}}{q_{ij}}$.
-As a result, points close to each other in the original space will retain a local cluster structure
-in the low-dimensional space.
+\textbf{Стохастическое вложение соседий с t-распределением (t-distribution Stochastic Neighbor Embedding,
+t-SNE)} нелинейный стохастический метод, ориентированный на сохранение локальной структуры данных. В
+высокоразмерном пространстве он вычисляет условные вероятности
+$p_{j|i} \propto \exp(-|x_i-x_j|^2/2\sigma_i^2)$, отражающие близость соседей; затем симметризует их:
+$p_{ij}=(p_{j|i}+p_{i|j})/2n$. В низкоразмерном отображении задаётся похожая мера (распределение Стьюдента
+с 1 степенью свободы). Алгоритм оптимизирует расстановку точек $Y$, минимизируя дивергенцию
+Кульбака–Лейблера $C = \sum_{i,j} p_{ij}\ln\frac{p_{ij}}{q_{ij}}$. В результате в низкоразмерном пространстве
+у близких в исходном пространстве точек будет сохраняться локальная кластерная структура.
 
-The 'perplexity' hyperparameter determines the number of effective neighbors. t-SNE shows an impressive
-visualization of local clusters, but poorly reproduces the global distance between clusters.
-It is computationally expensive for large samples and is usually used only for the final transition
-to 2D space (or 3D), not for intermediate DR. For textual embeddings, t-SNE is
-often applied after preprocessing (e.g., PCA mapping) because it scales poorly directly
-to several hundred features.
+Гиперпараметр перплексии определяет число эффективных соседей. t-SNE показывает впечатляющую визуализацию
+локальных кластеров, но плохо воспроизводит глобальное расстояние между кластерами. Он вычислительно дорог
+при больших выборках и обычно используется лишь для финального перехода в двумерное пространство (или трехмерное),
+а не для промежуточного снижения размерности. Для текстовых эмбеддингов t-SNE часто применяют после
+предварительной обработки (например, снижения размерности PCA), поскольку напрямую на несколько сотен
+признаков он масштабируется плохо.
 
-\textbf{Uniform Manifold Approximation and Projection (UMAP)} is a method of nonlinear DR
-based on the manifold assumption. UMAP theoretically relies on Riemannian geometry and the theory
-of “fuzzy simplicial sets”. The algorithm constructs a graph of $k$-nearest neighbors
-in the original space, then each pair of points is assigned a “membership” in a fuzzy set by a formula of the form:
+\textbf{Равномерная аппроксимация и проекция многообразий (Uniform Manifold Approximation and Projection, UMAP)}
+метод нелинейного DR на основе предположения о многообразии. Теоретически UMAP опирается на риманову
+геометрию и теорию «нечетких симплициальных множеств» (fuzzy simplicial sets). Алгоритм строит граф
+$k$-ближайших соседей в исходном пространстве, затем каждой паре точек присваивает «членство» в нечетком
+множестве по формуле вида:
 
 \begin{equation}
     \mu_{ij}=\exp\big(-\cfrac{\max(0, d(x_i, x_j) - \rho_i)}{\sigma_i}\big),
 \end{equation}
 
-where $\rho_i$ takes into account the density of neighbors. These local symplectic sets are then combined
-and symmetrized, and a weighted data graph is obtained. Next, a similar “fuzzy” graph is constructed in
-low-dimensional space and the location of points is optimized by minimizing the cross entropy energy between
-the two graphs.
+где $\rho_i$ учитывает плотность соседей. После чего эти локальные симплициальные множества объединяются
+и симметризуются, получается взвешенный граф данных. Далее строится аналогичный «нечеткий» граф в низкоразмерном
+пространстве и оптимизируется расположение точек, минимизируя энергию перекрёстной энтропии между двумя графами.
 
-UMAP retains the local structure of the data while aiming to distribute points uniformly on the manifold;
-unlike t-SNE, it can better retain some global features (due to the cross-entropy used). The main hyperparameters
-of UMAP are the number of neighbors 'n\_neighbors' (specifies the scale of locality) and 'min\_dist'
-(minimum distance of points in the mapping).
+UMAP удерживает локальную структуру данных, при этом стремясь равномерно распределить точки на многообразии;
+в отличие от t-SNE, он может лучше сохранять некоторые глобальные особенности (обусловлено используемой
+кросс-энтропией). Основные гиперпараметры UMAP – число соседей ‘n\_neighbors’ (задаёт масштаб локальности)
+и ‘min\_dist’ (минимальное расстояние точек в отображении).
 
-UMAP demonstrates high speed and scalability (the method can run on an arbitrary number of output measurements
-at once). In an experiment, UMAP was shown to give a visualization quality comparable or better than t-SNE
-with a significantly shorter runtime \parencite{UMAP2018mcinnes}. UMAP's advantages also include the preservation
-of a larger-scale data structure and the ability to “downscale” the dimensionality down to multidimensional
-vectors (not only 2D).
+UMAP демонстрирует высокую скорость и масштабируемость (метод может работать сразу на произвольном числе
+выходных измерений). В эксперименте было показано, что UMAP даёт качество визуализации, сопоставимое или лучше,
+чем у t-SNE, при существенно меньшем времени работы \parencite{UMAP2018mcinnes}. К преимуществам UMAP можно
+отнести также сохранение более крупномасштабной структуры данных и возможность понижать размерность вплоть
+до многомерных векторов, а не только двумерных.
 
-Nevertheless, UMAP may incorrectly represent highly sparse clusters by “equalizing” dense and sparse regions
-(the algorithm actually seeks a uniform distribution of data on the assumed manifold). In addition, UMAP
-results are sensitive to the choice of hyperparameters and the degree of noise sampling (the algorithm uses
-approximate neighbor search and negative sample sampling) \parencite{huang2022towards}. However, in most textual
-data clustering applications, UMAP has proven to be a robust and efficient tool.
+Тем не менее, UMAP может некорректно отображать сильно разреженные кластеры, «выравнивая» плотные и разреженные
+области (алгоритм фактически стремится к равномерному распределению данных на предполагаемом многообразии).
+Кроме того, результаты UMAP чувствительны к выбору гиперпараметров и степени шума в выборке (алгоритм использует
+приближённый поиск соседей и сэмплирование отрицательных примеров) \parencite{huang2022towards}. Впрочем, в
+большинстве прикладных задач по кластеризации текстовых данных UMAP показал себя устойчивым и эффективным
+инструментом.
 
-There are several Python implementations of this method. The classical implementation, 'umap-learn' (CPU),
-is widely used \parencite{mcinnes2018umap-software}, and there is a GPU implementation ('cuML') to speed
-up the learning process \parencite{cuml2020machine}. cuML's GPU implementation of UMAP can give speedups
-of up to 10-100× compared to the CPU version on large amounts of data. However, in early versions of cuML,
-approximations were introduced for speed purposes, sometimes resulting in a small difference in display
-quality compared to the original. Also the GPU implementation of UMAP may reduce the local structure preservation
-relative to the reference version. Thus, 'cuML' UMAP is suitable for very large amounts of data, while
-the implementation from 'umap-learn' is more versatile and stable, but runs slower.
+Существует несколько Python-реализаций данного метода. Классическая реализация --- 'umap-learn' (CPU) ---
+имеет крайне широкое распространение \parencite{mcinnes2018umap-software}. Для ускорения процесса обучения
+существует GPU-реализации ('cuML') \parencite{cuml2020machine}. GPU-реализация UMAP в 'cuML' может давать
+ускорение до 10-100× по сравнению с CPU-версией на больших объёмах данны. Однако в ранних версиях 'cuML'
+в целях скорости были введены приближения, что иногда влечёт небольшую разницу в качестве отображения
+по сравнению с оригиналом. Также GPU реализация UMAP может понизить сохранность локальной структуры
+относительно эталонной версии. Так, 'cuML' UMAP подходит для очень больших объемов данных, а реализация
+из 'umap-learn' более универсален и стабилен, но работает медленно медленнее.
 
-\textbf{Triplet Manifold Approximation and Projection (TriMAP)} is an embedding learning method with an emphasis
-on the global \parencite{TRIMAP2019} data structure. It formulates the problem through triples of $(i,j,k)$
-points: point $i$ must be closer to $j$ than to $k$ in a low-dimensional representation. The selection
-of such triplets is based on nearest and farthest neighbors in the original space; each triplet is given
-a weight reflecting the relative closeness of the pairs in the original space. Optimization is performed over
-a large sample of informative triplets using gradient descent.
 
-TriMAP preserves global structure much better than t-SNE and often better than UMAP. TriMAP also scales well
-and exhibits low runtime for large and high-dimensional samples \parencite{TRIMAP2019}. In terms of text embeddings,
-TriMAP can provide a more readable picture of document cluster locations on 2D (although local community details
-may be smoothed out).
 
-\textbf{Pairwise Controlled Manifold Approximation and Projection (PaCMAP)} is a newer method specifically designed
-to balance local and global structure \parencite{PACMAP2021}. Like TriMAP, it uses samples of pairs of points
-of different types: “close” pairs (neighbors), "middle" pairs (between clusters), and "far" pairs. For each
-pair type, the corresponding weights and attraction/repulsion forces are specified. As a result, the optimized
-loss function tends to simultaneously compress locally close points and push distant ones apart, preserving
-the global shape of the distribution.
+\textbf{Триплетная аппроксимация и проекция многообразий (Triplet Manifold Approximation and Projection, TriMAP)}
+метод обучения вложения с упором на глобальную структуру данных \parencite{TRIMAP2019}. Он формулирует задачу
+через тройки точек $(i,j,k)$: «точка $i$ должна быть ближе к $j$, чем к $k$» в низкоразмерном представлении.
+Выбор таких триплетов базируется на ближайших и дальних соседях в исходном пространстве; каждому триплету придаётся
+вес, отражающий относительную близость пар в исходном пространстве. Оптимизация выполняется по большой выборке
+информативных триплетов с помощью градиентного спуска.
 
-PaCMAP is robust to hyperparameter selection and DR in preprocessing, and preserves both
-local and global structure well. The disadvantages of PaCMAP are its relative novelty and the need to fit
-fractions of different types of pairs.
+TriMAP сохраняет глобальную структуру гораздо лучше, чем t-SNE и часто лучше, чем UMAP. Также TriMAP хорошо
+масштабируется и демонстрирует малое время работы для больших и высокоразмерных выборок \parencite{TRIMAP2019}.
+С точки зрения текстовых эмбеддингов TriMAP может дать более читаемую картину расположения кластеров документов
+на двумерную плоскость (хотя при этом детали локальных сообществ могут сглаживаться).
 
-Systematic comparisons indicate a characteristic separation in the properties of these algorithms. Thus, PCA,
-TriMAP, and PaCMAP preserve global distances (large-scale cluster structure) well, while t-SNE and UMAP are better
-at capturing local details \parencite{huang2022towards}. PCA is traditionally used for preprocessing: reducing
-the dimensionality to tens of components speeds up further analysis and makes it more stable. However, it is
-noticeable that full PCA preprocessing can distort the original distances, so the results of the final embedding
-(e.g., t-SNE/UMAP visualization) often depend on the number of PCA components. In experimental method evaluations,
-PaCMAP and TriMAP showed the best agreement of global distances, while UMAP and t-SNE were on average inferior
-in this task. Conversely, t-SNE and UMAP performed best in the classification task on vector features (testing
-local consistency).
+\textbf{Аппроксимация парных управляемых многообразий (Pairwise Controlled Manifold Approximation and Projection,
+PaCMAP)} более новый метод, специально сконструированный для баланса локальной и глобальной структуры
+\parencite{PACMAP2021}. Как и в TriMAP, здесь используются выборки пар точек разных типов: «близкие» пары (соседи),
+«средние» пары (между кластерами) и «дальние» пары. Для каждого типа пар заданы соответствующие веса и силы
+притяжения/отталкивания. В результате оптимизируемая функция потерь стремится одновременно сжимать локально близкие
+точки и раздвигать удалённые, сохраняя глобальную форму распределения.
 
-In general, the choice of DR method for high-dimensional embeddings of documents depends
-on the task: for subsequent clustering and thematic one often uses PCA or UMAP (for more “stable” representation
-of clusters), and for final 2D visualization and detailed analysis of local clusters --- t-SNE, UMAP or PaCMAP.
-Careful selection of hyperparameters and possibly a combination of methods (e.g., PCA+UMAP) can achieve a better
-representation of the textual data structure.
+PaCMAP устойчив к выбору гиперпараметров и сокращению размерности при предобработке, хорошо сохраняет как локальную,
+так и глобальную структуру. Недостатки PaCMAP --- относительная новизна и необходимость подбора долей разных типов пар.
 
-\subsubsection{Clustrering}
-In the considered scheme for thematic analysis of financial news articles, a DR
-algorithm is applied after obtaining textual embeddings. After this DR,
-clustering algorithms operate in a less sparse space, which can improve
-the selection of dense regions and reduce the influence of noise factors.
+Систематические сравнения указывают на характерное разделение свойств этих алгоритмов. Так, PCA, TriMAP и PaCMAP
+хорошо сохраняют глобальные расстояния (крупномасштабную структуру кластеров), в то время как t-SNE и UMAP лучше
+улавливают локальные детали \parencite{huang2022towards}. PCA традиционно используется для предобработки: снижение
+размерности до десятков компонент ускоряет дальнейший анализ и делает его более стабильным. Однако заметно, что полная
+предобработка PCA может исказить исходные расстояния, поэтому результаты итогового вложения (например, визуализации
+t-SNE/UMAP) часто зависят от числа компонент PCA. В экспериментальных оценках метода PaCMAP и TriMAP показали
+наилучшее согласование глобальных расстояний, тогда как UMAP и t-SNE в среднем уступали им в этой задаче.
+И наоборот, в задачах классификации на векторных признаках (проверка локальной согласованности) лучше всего
+проявили себя t-SNE и UMAP.
 
-\textbf{K-Means} is one of the classical partitional clustering algorithms \parencite{kmeans2010data}.
-It seeks to partition the data into $K$ clusters by minimizing the intra-cluster point spread.
-We denote clusters $C_1,\dots,C_K$ and cluster centroids $\mu_k$; then the optimized objective
-function (the “sum of squares of distances” metric from points to the corresponding centroids)
-is given as
+В целом выбор метода понижения размерности для высокоразмерных эмбеддингов документов зависит от задачи:
+для последующей кластеризации и тематического часто применяют PCA или UMAP (для более «стабильного» представления
+кластеров), а для финальной двумерной визуализации и детального анализа локальных кластеров --- t-SNE, UMAP или PaCMAP.
+Тщательный выбор гиперпараметров и, возможно, сочетание методов (например, PCA+UMAP) позволяет добиться лучшего
+отображения структуры текстовых данных.
+
+\subsubsection{Кластеризация}
+В рассматриваемой схеме тематического анализа финансовых новостных статей после получения текстовых
+эмбеддингов применяется алгоритм понижения размерности. После такого сокращения размерности алгоритмы
+кластеризации работают в менее разреженном пространстве, что может улучшить выделение плотных областей
+и снизить влияние шумовых факторов.
+
+\textbf{K-Средних} один из классических партиционных алгоритмов кластеризации \parencite{kmeans2010data}.
+Он ищет разбиение данных на $K$ кластеров, минимизируя внутрикластерный разброс точек. Обозначим кластеры
+$C_1,\dots,C_K$ и центроиды кластеров $\mu_k$; тогда оптимизируемая целевая функция (метрика «суммы
+квадратов расстояний» от точек до соответствующих центроидов) задаётся как
 
 \begin{equation}
     J(C)= \sum_{k=1}^K \sum_{x_i \in C_k} \|x_i - \mu_k\|^2,
 \end{equation}
 
-and is minimized when partitioned by the Euclidean metric. Finding the global minimum of this
-function is an NP-complete problem, so the K-Means method performs a greedy iterative procedure
-of point reclassification and centroid recalculation (usually with random initialization) that
-converges to a local minimum. An important feature of K-Means is the requirement to specify
-the number of clusters $K$ and the initial approximations in advance.
+и минимизируется при разбиении по Евклидовой метрике. Нахождение глобального минимума этой функции является
+NP-полной задачей, поэтому метод K-Средних выполняет жадную итеративную процедуру переклассификации точек
+и пересчёта центроидов (обычно со случайной инициализацией), которая сходится к локальному минимуму. Важной
+особенностью K-Средних является требование заранее задать число кластеров $K$ и начальные приближения.
 
-Since the algorithm typically uses a Euclidean metric, it forms mostly spherical clusters. All
-objects are automatically assigned to some cluster (rigidly “belonging” each point to one cluster),
-and the algorithm does not explicitly emphasize outliers or noise. Advantages of the method include
-ease of implementation, low computational cost, and widespread use. However, K-Means is unstable
-to outliers, and is poor at distinguishing nested or highly heterogeneous clusters.
+Поскольку алгоритм обычно использует Евклидову метрику, он образует в основном сферические кластеры.
+Все объекты автоматически относятся к какому-либо кластеру (жёсткое «принадлежность» каждой точки
+одному кластеру), и алгоритм не выделяет явно выбросы или шум. Среди преимуществ метода --- простота
+реализации, низкие вычислительные затраты и широкая распространённость. Однако K-Средних неустойчив
+к выбросам, и плохо выделяет вложенные или сильно неоднородные по форме кластеры.
 
-\textbf{Density-Based Spatial Clustering of Applications with Noise (DBSCAN)} is a density-based
-clustering method \parencite{DBSCAN1996}. It defines clusters as regions of high-density data separated
-by low-density regions. The algorithm uses two parameters: the radius $\epsilon$ and the minimum
-number of points $min_{pts}$. A point is called the “core” of a cluster if its $\epsilon$-neighborhood
-contains at least $min_{pts}$ points. Points reachable in density from the core belong to the same
-cluster.
+\textbf{Пространственная кластеризация приложений с шумом на основе плотности (Density-Based Spatial
+Clustering of Applications with Noiseб, DBSCAN)} метод кластеризации на основе плотности \parencite{DBSCAN1996}.
+Он определяет кластеры как регионы высокой плотности данных, отделённые низкоплотными областями. Алгоритм использует
+два параметра: радиус $\epsilon$ и минимальное число точек $min_{pts}$. Точка называется «ядром» кластера, если
+в её $\epsilon$-окрестности содержится по крайней мере $min_{pts}$ точек. Точки, достижимые по плотности
+от ядра, принадлежат тому же кластеру.
 
-DBSCAN automatically separates points that are not in dense regions as noise and does not require
-the number of clusters to be specified. Due to this, the method finds clusters of arbitrary shape
-and is well suited for datasets with non-uniformly distributed objects. However, DBSCAN has significant
-limitations: the choice of a single $\epsilon$ threshold is critical, and when combining clusters
-of different densities, the algorithm either merges them into one whole or breaks them into too small
-fragments. In addition, as the dimensionality of the space grows, the data becomes sparse, and it becomes
-difficult to distinguish a high-density region from a low-density one. As a consequence, DBSCAN
-in high-dimensional text embeddings often demonstrates reduced efficiency. Also, the complexity
-of classical DBSCAN in the absence of optimization can reach $O(n^2)$, although practical implementations
-with indexes usually have significantly lower performance.
+DBSCAN автоматически отделяет точки, не попавшие в плотные области, как шум, и не требует задания числа кластеров.
+Благодаря этому метод находит кластеры произвольной формы и хорошо подходит для наборов данных с неравномерно
+распределёнными объектами. Однако DBSCAN имеет значимые ограничения: выбор единого порога $\epsilon$ критичен,
+и при совмещении кластеров разной плотности алгоритм либо объединяет их в одно целое, либо разбивает на слишком
+мелкие фрагменты. Кроме того, с ростом размерности пространства данные разрежаются, и отличить высокоплотную
+область от низкоплотной становится затруднительно. Вследствие этого DBSCAN в высокоразмерных эмбеддингах текста
+часто демонстрирует пониженную эффективность. Также сложность классического DBSCAN при отсутствии оптимизации
+может достигать $O(n^2)$, хотя практические реализации с индексами обычно имеют существенно меньшую скорость работы.
 
-\textbf{Hierarchical DBSCAN (HDBSCAN)} is a hierarchical extension of the DBSCAN method \parencite{HDBSCAN2013}.
-Unlike DBSCAN, HDBSCAN does not require a fixed $\epsilon$: instead, it computes the mutual reachability
-distance between points $x$ and $y$ as
+\textbf{Иерархический DBSCAN (HDBSCAN)} иерархическое расширение метода DBSCAN \parencite{HDBSCAN2013}. В отличие
+от DBSCAN, HDBSCAN не требует фиксированного $\epsilon$: вместо этого он рассчитывает расстояние взаимной
+достижимости между точками $x$ и $y$ как
 
 \begin{equation}
     d_{\mathrm{mreach}}(x,y) = \max\bigl\{d_{\mathrm{core}}(x),\,d_{\mathrm{core}}(y),\,d(x,y)\bigr\},
 \end{equation}
 
-where $d_{\mathrm{core}}(x)$ is the distance from a point $x$ to its $k$-th nearest neighbor (i.e.,
-the minimum $\epsilon$ at which $x$ becomes the “core” of the cluster). We then construct a graph
-of complete mutual reachability (or directly a minimal island tree at such distances). By removing
-the edges of this tree in descending order of weight, the algorithm generates a tree-like hierarchy
-of clusters reflecting the nested structure of the data at different density thresholds. From this tree,
-the final clusters are selected based on the stability criterion. Such a procedure is equivalent
-to performing multiple runs of DBSCAN at all possible $\epsilon$ and selecting the most significant
-“stable” clusters. An important feature of HDBSCAN is that it finds the optimal number of clusters
-by itself, requiring only a minimum cluster size ('min\_cluster\_size').
+где $d_{\mathrm{core}}(x)$ — расстояние от точки $x$ до её $k$-го ближайшего соседа (то есть минимальное
+$\epsilon$, при котором $x$ становится «ядром» кластера). Затем строится граф полных взаимных достижимости
+(или напрямую минимальное остовное дерево на таких расстояниях). Удаляя рёбра этого дерева в порядке убывания
+веса, алгоритм формирует древовидную иерархию кластеров, отражающую вложенную структуру данных при разных
+порогах плотности. Из этого дерева по критерию стабильности выделяются финальные кластеры. Такая процедура
+эквивалентна проведению множества запусков DBSCAN при всех возможных $\epsilon$ и выбору наиболее значимых
+«стабильных» групп. Важной чертой HDBSCAN является то, что он сам находит оптимальное число кластеров, требуя
+лишь указать минимальный размер кластера ('min\_cluster\_size').
 
-Thanks to its hierarchical approach, HDBSCAN is able to detect nested clusters of different densities
-and adapt more flexibly to the data distribution than DBSCAN and K-Means. The algorithm is robust
-to density fluctuations: if there are regions of different homogeneity in the data, HDBSCAN will identify
-large sparse clusters and smaller dense clusters simultaneously. It automatically flags outliers, similar
-to DBSCAN, but without rigidly binding to a single threshold. Because of the additional processing
-(searching for $k$-nearest neighbors, MST construction, and hierarchy analysis), HDBSCAN is somewhat
-more computationally complex, but modern implementations with efficient neighborhood structures usually
-provide comparable or even better performance \parencite{HDBSCAN2017software}. In general, HDBSCAN
-provides a richer description of the data structure at different levels of granularity and more often
-yields more meaningful clusters in complex multidimensional spaces.
+Благодаря иерархическому подходу HDBSCAN способен выявлять вложенные кластеры различной плотности и более
+гибко адаптироваться к распределению данных по сравнению с DBSCAN и K-Средних. Алгоритм устойчив к флуктуациям
+плотности: если в данных имеются области разной однородности, HDBSCAN выделит крупные разреженные кластеры
+и более мелкие плотные кластеры одновременно. Он автоматически помечает выбросы, аналогично DBSCAN, но без
+жёсткой привязки к одному порогу. Из-за дополнительной обработки (поиск $k$-ближайших соседей, построение MST
+и анализ иерархии) HDBSCAN несколько сложнее вычислительно, но современные реализации с эффективными
+структурами соседства обычно обеспечивают сопоставимую или даже лучшую производительность
+\parencite{HDBSCAN2017software}. В целом HDBSCAN предоставляет более богатое описание структуры данных
+на разных уровнях детализации и чаще даёт более осмысленные кластеры в сложных многомерных пространствах.
 
-Existing experimental studies show that in the task of topic analysis of long texts, each method has its
-own pros and cons. K-Means is often used as a basic method due to its simplicity and scalability, but
-it gives a relatively coarse partitioning of topics because it is limited by the spherical shape
-of clusters and requires the number of topics to be specified in advance. DBSCAN can detect arbitrarily
-shaped clusters and separate noise, but its performance is reduced on high-dimensional embeddings of texts
-due to sparsity and the need to tune the global density threshold.
+Существующие экспериментальные исследования показывают, что в задаче тематического анализа длинных текстов
+каждый метод имеет свои плюсы и минусы. K-Средних часто используется как базовый метод ввиду простоты
+и масштабируемости, однако он даёт сравнительно грубое разбиение тем, так как ограничен сферической формой
+кластеров и требует заранее указать число тем. DBSCAN позволяет выявлять кластеры произвольной формы
+и отделять шум, но его эффективность снижается на высокоразмерных эмбеддингах текстов из-за разреженности
+и необходимости настройки глобального порога плотности.
 
-In many comparative experiments, HDBSCAN is shown to outperform both mentioned methods in terms
-of the quality of topic clusters: it automatically adapts to the variability of embedding density, detects
-nested topics of different granularity, and reliably eliminates irrelevant noise
-\parencite{HDBSCAN2017software, HDBSCAN2013}. These findings are supported by practical applications
-(e.g., news article clustering), where HDBSCAN most often yields more interpretable and stable results
-compared to K-Means or “flat” DBSCAN \parencite{BERTopic2022}.
+Во многих сравнительных экспериментах показано, что HDBSCAN превосходит оба упомянутых метода по качеству
+тематических кластеров: он автоматически адаптируется к вариативности плотности эмбеддингов, выявляет вложенные
+темы разной детальности и надёжно исключает нерелевантный шум \parencite{HDBSCAN2017software, HDBSCAN2013}.
+Эти выводы подтверждаются практическими применениями (например, при кластеризации новостных статей),
+где HDBSCAN чаще всего даёт более интерпретируемые и стабильные результаты по сравнению с K-Средних
+или «плоским» DBSCAN \parencite{BERTopic2022}.
 
-\subsubsection{Evaluation}
-In the joint optimization problems of DR and clustering algorithms, it is critical
-to apply metrics that can simultaneously evaluate the quality of the projection and the purity of the selected
-groups. The two most common metrics in this context are the silhouette index \parencite{silouette1987}
-and the DBCV index \parencite{dbcv2014density}.
+\subsubsection{Метрики оценивания}
+В задачах совместной оптимизации алгоритмов понижения размерности и кластеризации критически важно применять
+метрики, способные одновременно оценивать качество проекции и чистоту выделенных групп. Две наиболее
+распространённые метрики в этом контексте --- коэффициент силуэта \parencite{silouette1987} и индекс DBCV \parencite{dbcv2014density}.
 
-The silhouette coefficient characterizes, for each object, the ratio of the average intra-cluster distance
-to the nearest extra-cluster distance \parencite{silouette1987}. For object $i$ the following are calculated
+Коэффициент силуэта характеризует для каждого объекта соотношение средней внутрикластерной и ближайшей
+внекластерной дистанций \parencite{silouette1987}. Для объекта $i$ вычисляются
 
 \begin{equation}
     a(i)=\frac{1}{|C_i|-1}\sum_{j\in C_i\setminus\{i\}}d(i,j),\quad b(i)=\min_{C\neq C_i}\frac{1}{|C|}\sum_{j\in C}d(i,j),
 \end{equation}
 
-where $C_i$ is the cluster containing $i$, and $d(\cdot,\cdot)$ is the metric (usually Euclidean). Then
+где $C_i$ --- кластер, содержащий $i$, а $d(\cdot,\cdot)$ --- метрика (обычно Евклидова). Тогда
 
 \begin{equation}
     s(i)=\frac{b(i)-a(i)}{\max\{a(i),\,b(i)\}}\in[-1,1].
 \end{equation}
 
-The mean $s=\frac1N\sum_i s(i)$ reflects how compact and distant objects within clusters are from neighboring
-clusters.
+Среднее значение $s=\frac1N\sum_i s(i)$ отражает, насколько объекты внутри кластеров компактны и удалены
+от соседних кластеров.
 
-The silhouette coefficient is well suited for assessing separability for “spherical” clusters, but
-for density-based separability (different cluster densities and shapes) it can give overestimates or distorted
-estimates, since in this case intra-cluster and inter-cluster distances do not reflect the quality of density
-regions. In particular, the same is true for other indices of similar metrics, such as the Davis-Bolden and
-Calinski-Harabasz index \parencite{mmj2023liu}. All of them rely on average distances to centers or variance across clusters
-and do not take into account density heterogeneity and noise extraction \parencite{liu2024newindexclusteringevaluation}.
+Коэффициент силуэта хорошо подходит для оценки разделимости при «сферических» кластерах, однако при плотностном
+разделении (разной плотности и формы кластеров) он может дать завышенные или искажённые оценки, поскольку
+при этом внутрикластерная и межкластерная дистанции не отражают качества плотностных областей. В частности,
+то же справедливо и для других индексов подобных метрик, например, индекс Дэвиса–Болдена и Калински–Харабаша
+\parencite{mmj2023liu}. Все они опираются на средние расстояния до центров или дисперсию по кластерам и
+не учитывают неоднородность плотности и выделение шума \parencite{liu2024newindexclusteringevaluation}.
 
-Thus, was developed a density-based metric specifically for DBSCAN/HDBSCAN clustering, the Density-Based Clustering Validation
-Index (DBCV) \parencite{dbcv2014density}. This metric measures the average density ratio of “within - between” clusters,
-and also explicitly handles noise and arbitrary cluster shape. Together, it allows correct estimation of arbitrarily shaped
-clusters, which strictly speaking are called irregular clusters.
+Так, была разработана метрика на основе плотностей специально для DBSCAN/HDBSCAN-кластеризации --- индекс валидации
+кластеризации на основе плотности (Density-Based Clustering Validation Index, DBCV) \parencite{dbcv2014density}.
+Данная метрика измеряет среднее отношение плотностей «внутри --- между» кластерами, а также явно обрабатывает
+шум и произвольную форму кластеров. В совокупности, она позволяет корректно оценивать кластеры произвольных
+форм, которые строго говоря называются нерегулярными.
 
-On the other hand, DBCV has a key disadvantage --- when clusters overlap, it gives a higher score to their union than to their
-dissection, which can negatively affect exactly hierarchical density clustering. Another problem with existing cluster
-validity indices is the assumption that data within a cluster has a uniform distribution, even if the shape of the cluster
-is arbitrary.
+С другой стороны, у DBCV есть и ключевой недостаток --- при перекрытии кластеров он дает большую оценку их
+объединению, нежели рассечению, что может негативно сказаться именно на иерархической плотностной кластеризации.
+Еще одна проблема с существующими индексами валидности кластера заключается в предположении, что данные внутри
+кластера имеют однородное распределение, даже если форма кластера произвольна
 
-There are also other metrics, such as VIASCKDE \parencite{viasckde2022} and Min-Max-Jump Silhouette coefficient (MMJ-SC)
-\parencite{mmj2023liu, liu2024newindexclusteringevaluation}, they clearly have potential in a fairly wide range of tasks,
-but are still inferior to DBCV in stability on a different tasks and test cases \parencite{liu2024newindexclusteringevaluation}.
-Moreover, as example, MMJ-SC is absolutely new metric that have not been tested enough yet.
+Также существуют и другие метрики, например, такие, как VIASCKDE \parencite{viasckde2022} и Min-Max-Jump
+Silhouette coefficient (MMJ-SC) \parencite{mmj2023liu, liu2024newindexclusteringevaluation},
+они явно обладают потенциалом в достаточно широком спектре задач, однако все равно уступают DBCV в стабильности
+на большом спектре различных задач и тестовых кейсов. Более того, например, MMJ-SC абсолютно новая метрика и еще
+не была досаточно протестировна на практике.
 
-On the test data of clusters of complex nested shapes in three-dimensional space, the DBCV index is the only metric that
-performed correctly, showing a maximum value of 0.53 on the true clustering variant, while the silhouette coefficient,
-although it showed a higher maximum value of 0.62, but this maximum of the metric came from the categorically incorrect
-cluster partitioning \parencite{liu2024newindexclusteringevaluation}.
+На тестовых данных кластеров сложных вложенных форм в трехмерном пространстве, DBCV индекс, единственная метрика,
+которая корректно отработала, показав максимальное значение 0.53 на истинном варианте кластеризации, в то же время
+коэффициент силуэта хоть и показал большее максимальное значение 0.62, но данный максимум метрики пришелся
+на категорически неверную разметку кластеров \parencite{liu2024newindexclusteringevaluation}.

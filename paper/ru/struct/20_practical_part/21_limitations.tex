@@ -1,119 +1,115 @@
-Prior to practical implementation, a comprehensive analytical evaluation was conducted
-based on preliminary semantic analysis and structural design to identify and formalize
-the technical constraints affecting the FinABYSS architecture. As a result, five key
-problem areas were identified, of which three were able to offer sustainable solutions,
-while two less critical ones were left for further research.
+Перед началом практической реализации на основе предварительного семантического анализа и
+структурного проектирования была проведена всесторонняя аналитическая оценка, призванная
+выявить и формализовать технические ограничения, влияющие на архитектуру FinABYSS. В результате
+было выделено пять ключевых проблемных областей, из которых трем удалось предложить устойчивые
+решения, а две менее критичные оставлены для последующих исследований.
 
-\textbf{Deduplication of texts.} De-duplication is a necessary element of the text sentiment
-analysis pipeline because financial signals propagating with delay may be repeatedly fed
-into the corpus, and their repeated consideration distorts prediction results. For example,
-the initial publication of mortgage origination irregularities in September 2008 generated
-strong negative sentiment at the time of the event's occurrence, while its republications
-years later accompanying retrospective reviews do not have a similar effect on asset prices.
-Such discreteness of temporal context is not accounted for in classical textual deduplication
-based on linguistic or syntactic similarity.
+\textbf{Дедубликация текстов.} Дедубликация является необходимым элементом конвейера
+текстового анализа тональности, поскольку финансовые сигналы, распространяющиеся с задержкой,
+могут неоднократно попадать в корпус, и их многократное учёт искаженяет результаты
+прогнозирования. Так, первичная публикация о нарушениях в выдаче ипотечных кредитов
+в сентябре 2008 г. формировала сильный негативный сентимент в момент возникновения события,
+в то время как её републикации через годы, сопровождающие ретроспективные обзоры, не оказывают
+аналогичного влияния на цену активов. Подобная дискретность временного контекста не учитывается
+при классической текстовой дедубликации, основанной на лингвистическом или синтаксическом сходстве.
 
-Two news items can have almost complete textual similarity and yet carry dramatically different
-semantic connotations. As a theoretical example, if in the original article about the Citi Group
-fine (Section \ref{sec:practical_importance}), “79 million” had been mistakenly replaced with
-“79 thousands”, it would have had a fundamentally different sentiment and a different meaning.
+Две новости могут иметь практически полное сходство текста и при этом нести кардинально различные
+смысловые оттенки. Теоретический пример --- если бы в исходной статье о штрафе Citi Group
+(Раздел \ref{sec:practical_importance}), «79 млн» было бы ошибочно заменено на «79 тыс.», --- это бы
+повлекло за собой принципиально разный сентимент и потенциально противоположное торговое решение.
 
-A special category of duplicate materials is represented by corrections on the Yahoo! Finance
-platform. Such publications begin with the marker “/CORRECTION/”, then the article points
-to the corrected fragments and repeats the main text almost verbatim. Linear de-duplication
-at the line or $n$-gram level in such cases removes the latest version, which violates
-the logic of stream analysis.
+Особая категория дублирующих материалов представлена коррекциями на платформе Yahoo! Finance. Такие
+публикации начинаются с маркера «/CORRECTION/», затем в статье указывают на исправленные фрагменты и
+повторяют основной текст почти дословно. Линейная дедубликация на уровне строк или $n$-грамм в таких
+случаях удаляет последнюю версию, что нарушает логику потокового анализа.
 
-Thus, de-duplication in a financial media stream should fulfill two requirements: first,
-to distinguish semantically equivalent but contextually different publications in time;
-second, to correctly handle “correction”-versions, extracting non-overlapping semantics
-if it differs meaningfully from the previous version. Each document should be considered
-unique if it contains new information, even if the textual overlap rate is high.
+Таким образом, дедубликация в финансовом медиапотоке должна отвечать двум требованиям: во-первых,
+различать семантически эквивалентные, но контекстуально разных по времени публикации; во-вторых,
+корректно обрабатывать «correction»-версии, извлекая непересекающуюся семантику, если она значимо
+отличается от предыдущей версии. Каждый документ следует считать уникальным, если он содержит новую
+информацию, даже при высокой доле текстового совпадения.
 
-Since the problem lacks source markup, it requires a formal formulation of the semantic
-deduplication problem that goes beyond simple textual comparison. The semantic space
-of texts, unlike the lexical space, is continuous and unbounded, and therefore pairwise
-comparison of strings or texts by cosine distance is not sufficient to check the uniqueness
-of a single document: it is necessary to operate with volumes of vector representations and
-to take into account the distribution of ideas in a wider context.
+Поскольку в задаче отсутствует исходная разметка, требуется формальная постановка проблемы семантической
+дедубликации, выходящей за рамки простого текстового сравнения. Семантическое пространство текстов,
+в отличие от лексического, непрерывно и неограниченно, и поэтому для проверки уникальности одного
+документа недостаточно попарного сопоставления строк или текстов посредством косинусного расстояния:
+необходимо оперировать объемами векторных представлений и учитывать распределение идей в более широком
+контексте.
 
-A full description of the mathematical formulation of the problem and the proposed analytical
-solution is presented in Section \ref{sec:semantic_deduplication}. It is there that a strict
-definition of semantic uniqueness is given, and an algorithm for detecting documents that
-are close in meaning but differ in information value is presented.
+Полное описание математической формулировки задачи и предложенного аналитического решения представлено
+в разделе \ref{sec:semantic_deduplication}. Именно там даётся строгое определение семантической уникальности,
+приводится алгоритм обнаружения близких по смыслу, но различающихся по информационной ценности документов.
 
-\textbf{Computing Resources.} Training models on big data requires an extremely powerful computing
-infrastructure. For example, one FinBERT model was trained on four NVIDIA Tesla P100s for two
-days on 5 billion tokens \parencite{Yang2020FinBERT}. It should be clarified that the training time of only one
-model is given here, and several more models are usually trained during the experimentation
-process. Speaking of ModernBERT --- it was trained on eight NVIDIA H100s in 10 days, and the total
-corpus was about 3 trillion tokens \parencite{Warner2024ModernBERT}.
+\textbf{Вычислительные ресурсы.} Для обучения моделей на больших данных требуется крайне мощная вычислительная
+инфраструктура. Так, одна модель FinBERT обучалась на четырех NVIDIA Tesla P100 в течение двух суток на 5 миллиардах
+токенов \parencite{Yang2020FinBERT}. Стоит уточнить, что здесь приводится время обучения лишь одной модели, а в процессе
+экспериментирования обычно обучается еще несколько моделей. Говоря о ModernBERT --- он был обучен на восьми NVIDIA
+H100 за 10 суток, а общий объем корпуса составил около 3 триллионов токенов \parencite{Warner2024ModernBERT}.
 
-In the context of our study, ModernBERT is used as the baseline model, so we should focus on it.
-In the course of the study, a corpus of about 1 billion tokens was collected, which, although smaller
-than the ModernBERT corpus, would be sufficient for domain-adapted pre-training, i.e., an additional
-fourth stage of pre-training \parencite{Warner2024ModernBERT, gururangan2020DAPT}.
+В контексте нашего исследования в качестве базовой модели используется именно ModernBERT, соответственно ориентироваться
+стоит именно на него. В ходе исследования был собран корпус из приблизительно 1 миллиарда токенов, что хоть и меньше
+корпуса ModernBERT, однако хватило бы для доменно-адаптированного предобучения, то есть дополнительной четвертой
+стадии предобучения \parencite{Warner2024ModernBERT, gururangan2020DAPT}.
 
-Training even the basic ModernBERT model requires extremely powerful computing hardware. The minimum
-requirements are NVIDIA Tesla T4 from the server segment or NVIDIA RTX 3090 from the customer segment
-\parencite{Warner2024ModernBERT}. However, in the context of the study, only NVIDIA RTX 3060 was available,
-on which it would have been impossible to adapt ModernBERT. Therefore, due to the difficult availability
-of computational resources, the context of the study uses a baseline version of ModernBERT fine-tuned
-for the task of clustering vector representations.
+Обучение даже базовой модели ModernBERT требует крайне мощного вычислительного оборудования. Минимальные требования
+NVIDIA Tesla T4 из серверного сегмента и NVIDIA RTX 3090 --- из пользовательского \parencite{Warner2024ModernBERT}. Тем не менее,
+в контексте исследования была доступна только NVIDIA RTX 3060, на которой было бы невозможно обчинить ModernBERT.
+Поэтому, из-за труднодоступности вычислительных ресурсов, в контексте исследования используется базовая версия
+ModernBERT тонко настроенная для задачи кластеризации векторных представлений.
 
-\textbf{Data.} The lack of a representative text corpus in the financial domain was one of the key challenges
-of this study. Attempts to find open-source datasets on HuggingFace, Kaggle, GitHub and similar platforms
-revealed that the available financial corpora have either been removed for copyright infringement reasons,
-are closed for public use, or are too short fragments of text unsuitable for topic modeling and sentiment
-analysis in the current long-context research field
-\parencite{FiQA2018SA, Malo2014FPB, daudert2022multi, FSA2020problems, wiebe2005annotating}.
-In addition, many of the remaining sets are solely for fine-tuning neural network models, but do not
-contain the necessary amount or variety of data.
+\textbf{Ограниченность данных.} Отсутствие репрезентативного текстового корпуса в финансовом домене стало одной
+из ключевых проблем данного исследования. При попытках найти открытые наборы данных на платформах HuggingFace,
+Kaggle, GitHub и аналогичных ресурсах выяснилось, что доступные финансовые корпуса либо удалены по причинам
+нарушения авторских прав, либо закрыты для общего пользования, либо представляют собой слишком короткие фрагменты
+текста, непригодные для тематического моделирования и сентимент-анализа
+\parencite{FiQA2018SA, Malo2014FPB, daudert2022multi, FSA2020problems, wiebe2005annotating}. Кроме того, многие
+из оставшихся наборов предназначены исключительно для тонкой настройки нейросетевых моделей (fine-tuning), но
+не содержат  необходимого объёма или разнообразия данных.
 
-Self-collection of financial news articles is complicated by the fact that key sources are disparate and often
-resist mass scraping. Few providers provide access to paid and expensive APIs (e.g., X, formerly Twitter),
-where prices for historical data can run into the thousands of dollars. Meanwhile, news sites tend to focus
-on narrow segments of industry content, making single-source corpus biased and fragmented.
+Самостоятельный сбор финансовых новостных статей осложняется тем, что ключевые источники разрознены и зачастую
+противодействуют массовому скрейпингу. Лишь немногие провайдеры предоставляют доступ к платным и дорогостоящим
+API (например, X, ранее Twitter), где цены на исторические данные могут исчисляться тысячами долларов. При этом
+новостные площадки обычно фокусируются на узких сегментах отраслевого контента, что делает корпус с одного
+источника предвзятым и фрагментарным.
 
-From a financial point of view, not only the breadth of coverage is important, but also the availability
-of reliable metadata: timestamps, information about the author and others. Many sites lack open archives,
-provide only RSS feeds, and some resources simply do not place publication time in HTML, which makes automated
-parsing impossible without in-depth analysis and regular script updates. Different HTML template structures
-and dynamic content generators (JavaScript rendering) increase the complexity of developing data extraction
-pipelines.
+С финансовой точки зрения важна не только широта охвата, но и наличие достоверных метаданных: временных меток,
+информации об авторе и других. Многие сайты лишены открытых архивов, предоставляют лишь RSS-ленты, а часть ресурсов
+попросту не размещает даты публикации в HTML, что делает автоматизированный парсинг невозможным без глубокого
+анализа и регулярного обновления скриптов. Различные структуры HTML-шаблонов и динамические генераторы контента
+(JavaScript-рендеринг) увеличивают сложность разработки конвейеров извлечения данных.
 
-Thus, trying to assemble a truly representative corpus would require integrating multiple sources
-with heterogeneous site layouts, resulting in a high technical burden. Focusing on a single data provider
-risks introducing an imbalance in thematic and regional representations of financial events. At the same
-time, existing paid alternatives (e.g., commercial datasets of News from Bright
-Data\footnote{URL: \url{https://brightdata.com/products/datasets/news}}) are priced at several thousand
-dollars for a volume comparable to the corpus collected during the study, which is beyond the budget
-and research constraints of the project.
+Таким образом, попытка собрать по-настоящему репрезентативный корпус потребует интеграции множества источников
+с разнородными схемами сайтов, что приводит к высокой технической нагрузке. Ориентация на один-единственный
+поставщик данных рискует ввести дисбаланс в тематических и региональных представлениях финансовых событий. При
+этом существующие платные альтернативы (например, коммерческие датасеты News от Bright
+Data\footnote{URL: \url{https://brightdata.com/products/datasets/news}})) оцениваются в несколько тысяч долларов
+за объём, идентичный с собранным ходе исследования корпусом, что выходит за рамки бюджетных и исследовательских
+ограничений проекта.
 
-Consequently, the lack of open, large and homogeneous financial corpora remains a serious obstacle for building
-scalable and robust models for topic modeling and tone analysis in finance. The following Section \ref{sec:data_collecting}
-describes the chosen compromise approach to data collection and aggregation, taking into account the identified
-limitations and quality requirements of the corpus.
+Следовательно, отсутствие открытых, крупных и однородных финансовых корпусов остаётся серьёзным препятствием
+для создания масштабируемых и надёжных моделей тематического моделирования и анализа тональности в сфере финансов.
+В дальнейшем разделе \ref{sec:data_collecting} описывается выбранный компромиссный подход к сбору и агрегации
+данных, учитывающий выявленные ограничения и требования к качеству корпуса.
 
-\textbf{Context window limitation.} The base version of the ModernBERT model provides a context window of 8,192 tokens,
-which significantly outperforms traditional BERT-like models with a 512 token limit \parencite{devlin2019BERT,Warner2024ModernBERT}. However,
-even with this extended resource, 10-K and 10-Q financial documents, often exceeding tens of pages, do not fit
-completely. While there are techniques for sliding windowing or fragmenting text into overlapping chunks, they
-are beyond the scope of the original task of evaluating the out-of-the-box capabilities of modern LLMs.
-In the context of this study, it was decided to limit the analysis to news articles whose sizes fit within 8,192
-tokens, and not to consider multi-page analytical reports. This allowed us to maintain the focus on comparing
-embodiment and topic models without complicating the preprocessing by aggregating excerpts of long documents.
+\textbf{Ограниченность контекстного окна.} Базовая версия модели ModernBERT обеспечивает контекстное окно
+в 8 192 токена, что существенно превосходит традиционные BERT-подобные модели с ограничением в 512 токенов
+\parencite{devlin2019BERT,Warner2024ModernBERT}. Однако даже при таком расширенном ресурсе финансовые документы
+формата 10-K и 10-Q, зачастую превышающие десятки страниц, не умещаются полностью. Хотя существуют техники
+скользящего окна или фрагментирования текста на перекрывающиеся чанки, они выходят за рамки исходной задачи
+оценки «из коробки» возможностей современных LLM. В контексте данного исследования было принято решение
+ограничиться анализом новостных статей, размеры которых вписываются в 8 192 токена, а многостраничные аналитические
+отчёты не рассматривать. Это позволило сохранить фокус на сопоставлении эмбеддинговых и тематических моделей
+без усложнения препроцессинга за счет агрегирования отрывков длинных документов.
 
-\textbf{The irrelevance of existing benchmarks.} Comparing the performance of the ModernBERT model and its
-domain-adapted version on the widely accepted FLUE benchmark seems like a natural step for evaluating progress.
-However, FLUE datasets consist mostly of short chunks (up to 512 tokens) designed for typical text comprehension
-tasks \parencite{FLANG2022FLUE}. Because these datasets are sharpened for the 512-token window, they do not
-reflect the benefits of ModernBERT's extended context and, conversely, will underestimate its totals. Thus,
-the use of FLUE in the current study will lead to a distorted perception of the model's qualities: short-text
-tasks do not demonstrate its ability to capture long-term dependencies and synthesize information from large
-amounts of data.
+\textbf{Нерелевантность существующих бенчмарков.} Сравнение производительности модели ModernBERT и её
+доменно-адаптированной версии на общепринятом бенчмарке FLUE кажется естественным шагом для оценивания прогресса.
+Однако датасеты FLUE состоят преимущественно из коротких фрагментов (до 512 токенов), предназначенных для типовых
+заданий понимания текста \parencite{FLANG2022FLUE}. Поскольку эти датасеты заточены под 512-токенное окно, они не отражают
+преимуществ расширенного контекста ModernBERT и, наоборот, будут занижать его итоговые показатели. Таким образом,
+использование FLUE в текущем исследовании приведёт к искаженному восприятию качеств модели: задачи на коротких текстах
+не демонстрируют её способность захватывать долгосрочные зависимости и синтезировать информацию из больших объёмов данных.
 
-Both problems --- the limited context window when analyzing long documents and the unrepresentativeness of standard
-512-token benchmarks --- dictate the need for specialized preprocessing and validation techniques tailored
-to the financial domain. With the exception of these two problems, all other problems have been solved and their
-solutions are proposed in further sections of the paper.
+Обе проблемы — ограниченность контекстного окна при анализе длинных документов и нерепрезентативность
+стандартных 512-токеновых бенчмарков — диктуют необходимость создания специализированных методик предобработки
+и валидации, адаптированных под финансовый домен. За исключением данных двух проблем, все остальные были разрешены
+и их решения предлагаются в дальнейших разделах работы.

@@ -1,102 +1,97 @@
-After completing the semantic clustering step and constructing topic groups,
-it is necessary to process the generated clusters at the linguistic level.
-In topic modeling, the quality of topic representations is key to interpreting
-topics, communicating results, and understanding patterns. Thus, it is necessary
-to validate that each document set is indeed characterized by a unique set of key
-terms and does not contain mis-segmentation artifacts. This validation goes beyond
-purely metric evaluations and requires an empirical, “human” view of which words
-truly define topic content. In the context of an unlabeled corpus, such validation
-is particularly important: without initial topic labels, the only source of information
-about the semantic homogeneity of clusters remains the text of the publication itself.
-Moreover, there is a need to assign names to each of the clusters, so it is crucial
-to develop a topic representation pipeline.
+После завершения этапа семантической кластеризации и построения тематических групп,
+необходимо обработать сформированные кластеры на лингвистическом уровне. В тематическом
+моделировании качество представлений тем является ключевым для интерпретации тем,
+передачи результатов и понимания закономерностей. Так, необходимо убедиться,
+что каждое множество документов действительно характеризуется уникальным набором
+ключевых терминов и не содержит артефактов неправильной сегментации. Данная валидация
+выходит за пределы чисто метрических оценок и требует эмпирического, «человеческого»
+взгляда на то, какие слова действительно определяют содержание темы. В контексте
+неразмеченного корпуса такая проверка особенно важна: без исходных меток о тематике
+единственным источником информации о семантической однородности кластеров остаётся
+текст самой публикации. Более того, существует необходимость в присвоении названий
+каждому из кластеров, поэтому крайне важно разработать пайплайн репрезентации тем.
 
-On the other hand, clustering results in lower level labels, and in the context
-of the current system a hierarchical approach to topic representation is implied,
-which leads to the need to extract additional information from the current model
-and post-process it.
+С другой стороны, результатом кластеризации являются метки нижнего уровня, а в контексте
+системы подразумевается иерархический подход к репрезентации тем, что ведет к необходимости
+извлечения из текущей модели дополнительной информации и ее пост-обработки.
 
-To simplify and formalize the process, FinABYSS implemented a specialized topic
-representation pipeline based on the following tools:
+Для упрощения и формализации процесса в FinABYSS был реализован специализированный пайплайн
+репрезентации тем, основанный на следующих инструментах:
+
+
+
+
 
 \begin{itemize}
-    \item BERTopic --- for convenient and simplified processing of linguistic features,
-    visualization of weighted word frequencies, and hierarchy construction.
-    \item OpenAI API — to automate the partitioning of the obtained clusters based
-    on their linguistic features.
-    \item DataMapPlot — to simplify work with the graphical interface and create
-    an interactive semantic map.
-    \item Proprietary implementation:
+    \item BERTopic --- для удобства и упрощения процесса обработки лингвистических признаков,
+    визуализации взвешенных частот слов, а также построения иерархии.
+    \item OpenAI API --- для автоматизации разметки полученных кластеров на основе их лингвистических признаков.
+    \item DataMapPlot для упрощения работы с графическим интерфейсом и создания интерактивной семантической карты.
+    \item Собственная реализация:
     \begin{itemize}
-        \item over BERTopic — to realize the possibility of selecting a certain number
-        of hierarchical thematic levels.
-        \item between BERTopic and OpenAI — to realize the possibility of assigning thematic
-        names based on linguistic features at higher hierarchical levels than only
-        at the lowest one.
-        \item between BERTopic and DataMapPlot — for fine-tuning both static and interactive
-        semantic maps.
+        \item над BERTopic --- для реализации возможности выбора определенного количества иерархических тематических уровней.
+        \item между BERTopic и OpenAI --- для реализации возможности присвоения тематических названий на основе
+        лингвистических признаков на более высоких иерархических уровнях, нежели только на самом нижнем.
+        \item между BERTopic и DataMapPlot — для тонкой настройки как статической, так и интерактивной семантической карты.
     \end{itemize}
 \end{itemize}
 
-Thus, the first step in the pipeline was to vectorize the texts, i.e. to bring them to matrix
-form. For this purpose, the 'CountVectorizer' from the 'sklearn' library was used, which was
-configured to extract unigrams and bigrams. This is useful for a more accurate representation
-of topics as it leads to terms such as “central bank”, “monetary policy” and “New York” being
-considered both together rather than separately word by word.
+Таким образом, первым этапов в пайплайне стала векторизация текстов, то есть приведение их к матричному виду.
+С этой целью использовался 'CountVectorizer' из библиотеки 'sklearn', который был настроен настроенная
+на извлечение униграмм и биграмм. Это полезно для более точной репрезентации тем, так как ведет к рассмотрению
+таких терминов как “central bank”, “monetary policy” и “New York” и совместно, а не отдельно по словам..
 
-Henceforth, words in the context of documents such uni- and bigrams will be called “terms”
-to prevent confusion, since in fact, in the context of the developed system, not words but
-$n$-grams, i.e., short sequences of $n$ words, are considered.
 
-Also, based on the free English-language stop-word dictionary \parencite{nothman2018stop},
-the stage of filtering out articles, prepositions, pronouns, conjunctions and other parts
-of speech that interfere with the selection of truly representative terms was set up.
+Отныне, слова в контексте документов такие уни- и биграммы будут называться <<терминами>> для предотвращения
+путаницы, так как, на самом деле, в контексте разработанной системы рассматриваются не слова, а $n$-граммы,
+то есть короткие последовательности из $n$ слов.
 
-Finally, the minimum frequency of a term in a document was configured for its inclusion
-in the matrix. It is not difficult to imagine a situation where a certain term occurs only
-once in all documents. It is unlikely that the term reflects a particular topic. On the other
-hand, the corpus contains over a million documents and unless a minimum frequency of a term
-is set, the matrix will become huge and impractical to use. Therefore, terms appearing less
-than 15 times in the entire corpus are cut off as statistically unrepresentative.
+Также на основе свободного англоязычного словаря стоп-слов \parencite{nothman2018stop} был настроен этап
+фильтрации артиклей, предлогов, местоимений, союзов и других частей речи, мешающих отбору по-настоящему
+репрезентативных терминов.
 
-Finally, the system implies real-time operation, so it is fundamental to be able
-to incrementally update the term matrix, for this purpose an online version
-of 'CountVectorizer' --- 'OnlineCountVectorizer' was used.
+Наконец была настроена минимальная частота термина в документе для его включения в матрицу.
+Несложно представить ситуацию, когда определенный термин встречается во всех документах только
+один раз. Маловероятно, что данный термин отражает определенную тематику. С другой стороны,
+в корпусе собрано более миллиона статей и, если не установить минимальную частоту термина,
+матрица станет огромной и непрактичной в использовании. Поэтому термины, появляющиеся менее
+15 раз во всём корпусе, отсекаются как статистически нерепрезентативные.
 
-After forming the matrix of terms, it is necessary to group them into thematic clusters
-and determine the relevance of terms for each thematic group, in order to further generate
-cluster names based on the most representative terms.
+Наконец, система подразумевает функционирование в режиме реального времени, поэтому принципиально
+важно уметь инкрементально обновлять матрицу терминов, для этого была использована онлайн версия
+'CountVectorizer' --- 'OnlineCountVectorizer'.
 
-Term Frequency Inverse Document Frequency (TF-IDF) and Best Match (BM-25) are additive
-relevance functions. They are used by most search engines as basic relevance metrics.
-Both metrics indicate the relevance of a document. The higher the value of the metrics,
-the more relevant the document is. Having said that, it is important to note that
-the value of the metrics itself does not have any meaningful interpretation other than
-the relative difference of relevance of documents or terms with each other.
+После формирования матрицы терминов, необходимо сгруппировать их по тематическим кластерам
+и определить релевантность терминов для каждой тематической группы, чтобы в дальнейшем,
+на основе наиболее репрезентативных терминов сгенерировать названия кластеров.
 
-In the context of search engines, the metric reflects the relevance of a document or
-term to a search query, but the current system uses a modified TF-IDF metric that
-expresses the relevance of a term to a topic rather than to a query.
+Частота термина, обратная частота документа (Term Frequency Inverse Document Frequency, TF-IDF)
+и Best Match (BM-25) являются аддитивными функциями релевантности. Они используются в большинстве
+поисковых систем как основные метрики релевантности. Обе метрики показывают релевантность документа.
+Чем выше значение метрик, тем более релевантен документ. При этом, важно отметить, что само значение
+метрик не имеет какой-либо значимой интерпретации, кроме как относительная разность релевантности
+документов или терминов друг с другом.
 
-Such a metric, is called c-TF-IDF \parencite{BERTopic2022}. It can best be explained as a TF-IDF
-formula adopted for the topic as a whole. That is, all documents within a topic
-are not considered separately, but are combined into one large document, on the basis
-of which the calculation is made. Thus, c-TF-IDF takes into account what distinguishes
-documents in one topic cluster from documents in another.
+В контексте поисковых систем метрика отражает релевантность документа или термина поисковому запросу,
+но в текущей системе используется модифицированная TF-IDF метрика, которая выражает релевантность
+термина, не по отношению к запросу, а по отношению к теме.
 
-Thus, we first extract the frequency of term $x$ in topic cluster $c$ to which term
-$x$ belongs. This results in a class-based representation of $tf$. And in order
-to account for the differences in the size of topic clusters, the $L_1$-norm is computed
-from the extracted frequencies.
+Такая метрика, называется c-TF-IDF \parencite{BERTopic2022}. Лучше всего ее можно объяснить, как формулу TF-IDF принятую для всей
+темы, в целом. То есть все документы внутри темы не рассматриваются по-отдельности, а объединяются в один
+большой документ, на основе которого происходит подсчет. Так, c-TF-IDF учитывает то, что отличает документы
+в одном тематическом кластере от документов в другом.
 
-Then, the logarithm of the sum of the unit and the quotient of dividing the average number
-of words in each topic cluster by the frequency of word $x$ in all clusters is calculated.
-Thus, an $idf$ representation is obtained, which helps to determine how rare a given word
-$x$ is among all other classes. The unit is needed to ensure that the logarithm is always
-positive.
+Таким образом, мы сначала извлекаем частоту термина $x$ в тематическом кластере $c$, которому и принадлежит
+термин $x$. В результате получается представление $tf$ на основе классов. А для того, чтобы учесть различия
+в размере тематических кластеров, по полученным частотам вычисляется $L_1$-норма.
 
-Finally, as in the case of regular TF-IDF, the obtained representations $tf$ and $idf$
-are multiplied (Equation \ref{eq:c_tf_idf}):
+Затем, вычисляется логарифм суммы единицы и частного от деления среднего количества слов в каждом
+из тематических кластеров на частоту слова $x$ во всех кластерах. Так, получается представление $idf$,
+которое помогает определить насколько данное слово $x$ редко встречается среди всех остальных классов.
+Единица нужна для того, чтобы логарифм всегда был положительным.
+
+Наконец, как и в случае с обычным TF-IDF, полученные репрезентации $tf$ и $idf$ перемножаются
+(Формула \ref{eq:c_tf_idf}):
 
 \begin{equation}\label{eq:c_tf_idf}
     w_{x, c} =
@@ -111,18 +106,19 @@ are multiplied (Equation \ref{eq:c_tf_idf}):
     \Bigg),
 \end{equation}
 
-where $w_{x, c}$ is the relevance of term $x$ to topic cluster $c$, $\mathbb{X}_i$ is the set
-of all terms in topic cluster $i$.
+где $w_{x, c}$ --- релевантность терма $x$ тематическому кластеру $c$,
+$\mathbb{X_i}$ --- множество всех термов в тематическом кластере $i$.
 
-However, instead of the classical c-TF-IDF formula, it was decided to use its modified analog.
-Some words or terms occur too frequently in each topic, but are not considered typical stop words
-for exclusion from the text. To smooth out the most frequent terms in a topic, the system applies
-term frequency normalization, i.e., it extracts the square root of $tf$, after applying a weighting
-scheme.
+Тем не менее, вместо классической формулы c-TF-IDF, было принято решение использовать
+ее модифицированный аналог. Некоторые слова или термины встречаются слишком часто
+в каждой из тем, однако не считаются типичными стоп-словами для исключения из текста.
+Чтобы сгладить самые частые термины в теме, в системе применяется нормализация частот
+терминов, то есть извлекается квадратный корень из $tf$, после применения схемы взвешивания.
 
-On the other hand, although the collected financial corpus is large, it may not fully represent all
-the lexical abundance of the general population. Therefore, for a more stable result, BM-25
-transformation was applied to $idf$. The final relevance formula looks as follows:
+С другой стороны, несмотря на то, что собранный финансовый корпус велик, он может
+не вполне исчерпывающе отражать все лексическое изобилие генеральной совокупности.
+Поэтому, для более стабильного результата, к $idf$ было применено преобразование BM-25.
+Итоговая формула релевантности выглядит следующим образом:
 
 \begin{equation}
     w_{x, c} =
@@ -137,28 +133,30 @@ transformation was applied to $idf$. The final relevance formula looks as follow
     \Bigg),
 \end{equation}
 
-The $0.5$ coefficients are based on fitting to a theoretically cleaner form. This form gives less weight
-to terms that occur too frequently.
+Коэффициенты $0.5$ основаны на подгонке под теоретически более чистую форму.
+Такая форма дает меньший вес слишком часто встречающимся терминам.
 
-As a result, we obtain bag-of-words for each of the topic clusters that are fairly representative
-of the lexical richness of each topic. However, the bag-of-words may still contain some words that
-are not fully representative or the bag may be overly homogeneous. These problems can negatively affect
-the topic name generation process, so a more sophisticated pipelining was envisioned in the system design,
-which adds 2 more steps before the final representation.
+В итоге, мы получаем для каждого из тематических кластеров мешки слов, которые
+достаточно репрезентативно отражают лексическое богатство каждой темы. Тем не менее,
+в мешках слов все еще могут присутствовать некоторые не совсем репрезентативные слова
+или же мешок может быть излишне однородным. Данные проблемы могут негативно сказаться
+на процессе генерации названий тем, поэтому при разработке системы был предусмотрен
+более сложный пайплайн, который добавляет еще 2 шага перед финальной репрезентацией.
 
-The first step is to semantically compare the most representative words, with the most representative
-documents. First, the 30 most representative terms are extracted from the bag-of-words, and the 5-10 most
-representative documents are extracted from the topic cluster itself. Then, we collect the already
-extracted embeddings from the corresponding documents, and using the same embedding model ---
-'gte-modetnbert-base' --- we extract embeddings from the selected terms. Then, we compare the candidate
-terms' embeddings with the most representative documents and rank them according to the obtained value
-of the cosine distance metric.
+Первый шаг заключается в семантическом сравнении наиболее репрезентативных слов,
+с наиболее репрезентативными документами. Сначала из мешка слов извлекается 30 наиболее
+репрезентативных терминов, а из самого тематического кластера --- 5 наиболее репрезентативных
+документов. Затем, мы собираем уже извлеченные эмбеддинги по соответствующим документам,
+и при помощи той же эмбеддинговой модели —-- 'gte-modetnbert-base' --- извлекаем эмбеддинги
+из выбранных терминов. После чего, мы сравниваем эмбеддинги терминов-кандидатов с наиболее
+репрезентативными документами и ранжируем их по полученному значению метрики косинусного расстояния.
 
-In the second step, we apply the Maximal Marginal Relevance (MMR) algorithm, which is a technique for
-query-based abstracting that maximizes the similarity of the query response fragments and minimizes
-the similarity to the fragments already selected in the response. Similar to TF-IDF, in the context
-of the current system, a term rather than a query is considered. That is, we maximize the internal
-diversity of the most representative term topics. MMR is computed using the following formula:
+На втором шаге мы применяем алгоритм Максимальной Предельной Релевантности (Maximaxl Marginal Relevance,
+MMR) --- это техника для реферирования по запросу, которая максимизирует похожесть фрагментов ответа
+на запрос и минимизирует схожесть с уже выбранными в ответ фрагментами. Аналогично TF-IDF, в контексте
+текущей системы рассматривается не запрос, а термин. То есть мы максимизируем внутреннее разнообразие
+наиболее репрезентативных теме терминов. MMR вычисляется по следующей формуле:
+
 
 \begin{equation}\label{eq:mmr}
     MMR =
@@ -169,24 +167,19 @@ diversity of the most representative term topics. MMR is computed using the foll
     ],
 \end{equation}
 
-where $\mathbb{T}$ is the topic for which $MMR$ is calculated, $\mathbb{R}$ is the set of all terms
-$t_i$ is the term under consideration, and $\mathbb{S}$ is the set of already selected terms.
-It turns out that we search for a new term from $mathbb{R} \setminus \mathbb{S}$ so that it is
-maximally similar to the topic, but minimally similar to the terms already present in the bag-of-words.
-In Equation \ref{eq:mmr}, the coefficient $\lambda$ is a hyperparameter and balances the similarity
-of terms to the topic with the dissimilarity of terms to each other. The smaller the $\lambda$ is,
-the less similar the terms are to each other, and the larger it is, the more similar the terms are
-to the topic.
+где $\mathbb{T}$ --- тема, для которой рассчитывается $MMR$, $\mathbb{R}$ --- множество всех терминов $t_i$ --- рассматриваемый термин,
+а $\mathbb{S}$ — множество уже выбранных терминов. Получается, что мы ищем новый термин из $mathbb{R} \setminus \mathbb{S}$ так,
+чтобы он был максимально похож на тему, но минимально на на уже присутствующие в мешке слов термины. В Формуле \ref{eq:mmr}
+коэффициент $\lambda$ является гиперпараметром и балансирует похожесть терминов на тему с непохожестью терминов друг с другом.
+Чем меньше $\lambda$, тем термины менее похожи друг на друга, а чем больше, тем похожее термины на тему.
 
-Thus, we have a maximally representative set of terms, against which we can generate topic names.
-The system provides the use of text2text models directly for topic generation. Specifically,
-in the current implementation we used the GPT-4o model, for which we defined a corresponding prompt
-with instructions. The model was used with the help of OpenAI API. And all generated labels were
-later validated manually.
+Так, у нас получается максимально репрезентативный набор терминов, относительно которых мы уже можем генерировать названия тем.
+Непосредственно для генерации тем в системе предусмотрено использование text2text моделей. Конкретно в текущей реализации
+использовалась модель GPT-4o, для которой был задан соответствующий промпт с инструкциями.
+Модель использовалась с помощью OpenAI API. А все сгенерированные метки позднее были провалидированы вручную.
 
-Finally, the final step is the visualization of the semantic map. The visualization was done
-in two formats: static --- for work and presentation, and interactive --- for system functioning.
-Visualization was performed using the Python library DataMapPlot, as well as custom add-ons in
-HTML, CSS and JavaScript. Also at the system level, functionality was developed for text search,
-building a word cloud, filtering by source, assets, publication date, and other quantitative
-attributes.
+Наконец, заключительным этапом является визуализация семантической карты. Визуализация была выполнена
+в двух форматах: в статичном --- для работы и презентации, и в интерактивном --- для функционирования системы.
+Визуализация осуществлялась при помощи Python-библиотеки DataMapPlot, а также кастомных дополнений на HTML,
+CSS и JavaScript. Также на системном уровне были разработаны функциональности для поиска по текстам,
+построения облака слов, фильтрации по источникам, активам, дате публикации и другим количественным признакам.
