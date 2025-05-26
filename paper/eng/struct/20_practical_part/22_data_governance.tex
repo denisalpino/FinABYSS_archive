@@ -59,25 +59,22 @@ of which 374 are working days according to the US calendar.
 dissemination and timely publication directly affect market reactions. Considered sources included:
 
 \begin{itemize}
-    \item News outlets: Bloomberg\footnote{URL: \url{https://www.bloomberg.com/}},
-    The New York Times\footnote{URL: \url{https://www.nytimes.com/}},
-    Reuters\footnote{URL: \url{https://www.reuters.com/}}, etc;
-    \item Analytical platforms: Seeking Alpha\footnote{URL: \url{https://seekingalpha.com/}},
-    TradingView\footnote{URL: \url{https://tradingview.com/}};
+    \item News outlets: Bloomberg, The New York Times, Reuters, etc;
+    \item Analytical platforms: Seeking Alpha, TradingView;
     \item Official sites: Corporate and government portals.
 \end{itemize}
 
 An analysis of over 50 corporate and more than 100 government resources showed that, thanks to RSS feeds, press
-releases are centrally aggregated via PR Newswire\footnote{URL: \url{https://www.cision.com/}} and
-GlobeNewswire\footnote{URL: \url{https://www.globenewswire.com/}}. Other automated aggregators
-(e.g., Business Wire\footnote{URL: \url{https://www.businesswire.com/}}) exist, but PR Newswire and GlobeNewswire
+releases are centrally aggregated via PR Newswire and
+GlobeNewswire. Other automated aggregators
+(e.g., Business Wire exist, but PR Newswire and GlobeNewswire
 empirically dominate; however, they offer press releases only, without genre diversity.
 
 Among news outlets, Reuters proved optimal in responsiveness and market coverage. Niche but high-quality sources
-(e.g., The Information\footnote{URL: \url{https://www.theinformation.com/}}, Epoch AI\footnote{URL: \url{https://epoch.ai/}})
+(e.g., The Information, Epoch AI)
 were also examined; they provide overly specialized content, whereas traditional outlets
-such as Bloomberg, The Wall Street Journal\footnote{URL: \url{https://www.wsj.com/}},
-and The Economist\footnote{URL: \url{https://www.economist.com/}} cover a broader market spectrum, albeit with
+such as Bloomberg, The Wall Street Journal,
+and The Economist cover a broader market spectrum, albeit with
 technical constraints.
 
 Of the analytical platforms, Seeking Alpha was excluded due to its large volume of paywalled content, and TradingView
@@ -86,9 +83,8 @@ was unsuitable because it does not grant access to historical publications.
 Thus, PR Newswire and Reuters became the corpus's primary sources. To mitigate the risk of systematic bias and ensure
 broader coverage, it was nevertheless decided to enrich the corpus with additional publishers. Due to their fragmentation,
 lack of APIs, and often incomplete metadata (including sub-second timestamps), aggregation and synchronization proved
-unfeasible. Consequently, the aggregators Google Finance\footnote{URL: \url{https://www.google.com/finance/}},
-Yahoo! Finance\footnote{URL: \url{https://finance.yahoo.com/}},
-and FinURLs\footnote{URL: \url{https://finurls.com/}} were also considered.
+unfeasible. Consequently, the aggregators Google Finance,
+Yahoo! Finance, and FinURLs were also considered.
 
 Ultimately, Yahoo! Finance was selected thanks to its unified site structure and comprehensive aggregation of diverse
 sources, whereas FinURLs redirects to individual source sites, each with its own layout. Google Finance, though similar
