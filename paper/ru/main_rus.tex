@@ -1,14 +1,19 @@
 \documentclass[a4paper,12pt]{extarticle} % На предупрежденгие насрать, все норм компиилирутся и славно
 \input{preamble.tex}
-
+\usepackage{pdfpages}
 \begin{document}
     % Оглавление
-    \input{struct/00_title.tex}
-    \pagebreak
+    %\input{struct/00_title.tex}
+    %\pagebreak
 
     % Заявлениее о самостоятльности
-    \input{}
-    \pagebreak
+    %\input{}
+    %\pagebreak
+    \includepdf[pages=-,             % все страницы файла
+            noautoscale=true,    % не менять масштаб
+            offset=0mm 0mm,      % поправка позиционирования
+            pagecommand={\thispagestyle{empty}}
+           ]{struct/start-1.5.pdf}
 
     % Оглавленине
     \tableofcontents{}

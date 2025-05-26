@@ -1,80 +1,106 @@
-In recent years, the use of data analytics and artificial intelligence, specifically machine learning (ML) and deep learning (DL),
-to make investment decisions has become an integral part of many companies' and funds' strategies. However, today's financial
-markets are characterized by high volatility and high speed of information dissemination, which creates significant challenges
-for analyzing its impact on stock prices.
+В последние годы использование анализа данных и искусственного интеллекта, в частности машинного (Machine Learning, ML)
+и глубокого обучения (Deep Learning, DL), для принятия инвестиционных решений стало неотъемлемой частью стратегий многих
+трейдеров, компаний и фондов. Однако современные финансовые рынки характеризуются высокой волатильностью
+и высокой скоростью распространения информации, что создает значительные трудности для анализа ее влияния
+на цены акций.
 
-Events such as news releases, regulatory changes and analysts' reviews can have both immediate and cumulative effects
-on market performance. However, traditional approaches to analyzing data often ignore the dynamics of these influences,
-resulting in poor forecast accuracy and, consequently, ineffective investment strategies.
+Такие события, как выпуск экстренных новостей, изменения в законодательстве и обзоры аналитиков, могут оказывать
+как непосредственное, так и накопительное воздействие на показатели рынка. Однако традиционные подходы к анализу
+данных часто игнорируют динамику этих воздействий, что приводит к низкой точности прогнозов и, как следствие,
+неэффективности инвестиционных стратегий.
 
-To compete in a rapidly changing financial environment, companies need to continuously optimize their approaches to data analysis.
-This requires the development of tools that can not only account for the dynamic nature of information, but also provide forecasts
-based on an in-depth analysis of events and their cumulative effect. This paper responds to these challenges by proposing
-a methodology and a technological solution for more accurate stock price forecasting based on deep neural networks,
-namely large language models (LLM).
+Чтобы конкурировать в быстро меняющейся финансовой среде, компаниям необходимо постоянно оптимизировать свои
+подходы к анализу данных. Это требует разработки инструментов, которые могут не только учитывать динамический
+характер информации, но и предоставлять прогнозы на основе глубокого анализа событий и их совокупного эффекта.
+Данная статья отвечает на эти вызовы, предлагая методологию и технологическое решение для глубокой, интерпертируемой
+и простой финансовой аналитики, основанное на глубоких нейронных сетей, а именно больших языковых моделях (LLM).
 
-Classical ML algorithms have demonstrated their effectiveness in financial forecasting in numerous studies.
-However, DL and natural language processing (NLP) architectures have fundamentally shifted the paradigm following
-the emergence of the Transformer architecture in 2017 \parencite{vaswani2017attention}. Since then, LLMs
-have gained wide acceptance and proven their applicability across various applied tasks, including asset price forecasting
+Эффективность классических ML-алгоритмов в финансовом прогнозировании доказана во многих исследованиях.
+Однако DL и архитектуры для обработки естественного языка (NLP) буквально изменили правила игры после появления
+трансформерной архитектуры в 2017 году \parencite{vaswani2017attention}. С тех пор LLM получили широкое распространение
+и доказали свою применимость в различных прикладных задачах, в том числе и в прогнозировании стоимости активов
 \parencite{Jiang2023, Halder2022, Kim2023}.
 
-Contemporary research demonstrates the high efficacy of LLMs in addressing a range of tasks related to asset evaluation and forecasting.
-Nevertheless, unresolved issues remain regarding the integration of LLMs with classic quantitative models, the scarcity of open-source
-solutions for the financial domain, and the limitations of current models in processing long textual sequences (see Section 1.3.1).
-In December 2024, a new state-of-the-art (SoTA) model, ModernBERT, was introduced, capable of processing texts that are 16 times longer
-than those handled by previous architectures \parencite{Warner2024ModernBERT, devlin2019BERT}. This model extends analytical capabilities
-from isolated headlines or posts to full news articles, press releases, interview transcripts, and analytical reviews. Nonetheless,
-processing comprehensive financial reports (e.g., 10-Q, 10-K) remains a challenging task (see Section 2.1.4). Moreover,
-focusing on full articles helps to mitigate issues related to clickbait and insufficient context.
+Современные исследования демонстрируют высокую эффективность LLM для решения ряда задач, связанных с оценкой и
+прогнозированием активов. Тем не менее, остаются неразрешёнными вопросы интеграции LLM с классическими количественными
+моделями, отсутствия достаточного количества решений с откртым исходным кодом для финансовой области и ограничений
+существующих моделей для обработки длинных текстовых последовательностей (см. \hyperref[sec:models]{Раздел 1.3.1}).
+В декабре 2024 года была представлена новая современная модель ModernBERT, способная обрабатывать тексты, длина которых
+в 16 раз превышает возможности предыдущих архитектур \parencite{Warner2024ModernBERT, devlin2019BERT}. Эта модель
+расширяет возможности анализа с отдельного заголовка или поста до целых новостных статей, пресс-релизов, транскриптов
+интервью и аналитических обзоров. Несмотря на это, обработка полноценных финансовых отчётов (например, 10-Q, 10-K)
+остаётся сложной задачей (см. \hyperref[sec:limitations]{Раздел 2.1}). При этом, акцент на анализе полных статей
+позволяет избежать проблем, связанных с кликбейт-эффектом и недостатком контекста для принятия решения.
 
-Pre-trained language models on general text corpora do not always effectively address financial forecasting tasks \parencite{Jiang2023}.
-This is due to the unique nature of financial information, characterized by specialized terminology and jargon, which complicates
-the application of general-purpose models. Consequently, there is a need to adapt baseline LLMs for the financial domain.
+Языковые модели, предобученные на общих текстовых корпусах, не всегда эффективно решают задачи финансового прогнозирования
+\parencite{Jiang2023}. Это объясняется уникальностью финансовой информации, богатством специальной терминологии
+и жаргонизмов, что затрудняет применение моделей общего назначения. В связи с этим возникает необходимость адаптации
+базовых LLM для финансовой сферы.
 
-From a management perspective, when making investment decisions in volatile markets, it is crucial to promptly analyze the cumulative
-impact of various events (news, regulatory changes, analyses, etc.) on asset dynamics. Experts are unable to process such an immense
-volume of information within extremely short time frames. Conversely, the absence of a comprehensive analysis tool leads to delayed
-or inaccurate decisions, reducing the effectiveness of investment strategies and increasing the risk of missing lucrative opportunities.
+Таким образом, если рассматривать проблему со стороны управления, при принятии инвестиционных решений на волатильных рынках,
+важно своевременно анализировать совокупное влияние различных событий (новости, законодательные изменения, аналитика и т. д.)
+на динамику активов. Специалисты не способны справиться с таким объемом информации за предельно короткие сроки. С другой
+стороны, отсутствие инструмента для комплексного анализа приводит к запаздывающим или неточным решениям, что снижает
+эффективность инвестиционных стратегий и увеличивает риск пропуска выгодных возможностей.
 
-The development of such a tool is complex and demanding, and it can be conceptually divided into the following stages:
+Разработка инструмента, который мог бы разрешить данную ситуацию и упростить процесс принятия решений является трудоёмкой
+и комплексной задачей, которую можно условно разбить на следующие этапы:
+
 \begin{enumerate}
-    \item Development of an effective architecture for LLMs.
-    \item Adaptation of the model to the specifics of the financial domain.
-    \item Fine-tuning of the model to address particular tasks.
-    \item Integration of the model into a system operating with both quantitative and qualitative data, encompassing training, testing,
-    and deployment processes.
+    \item Разработка эффективной архитектуры для LLM.
+    \item Адаптация модели под специфику финансового домена.
+    \item Тонкая настройка модели для решения конкретных задач.
+    \item Интеграция модели в систему, работающую как с количественными, так и с качественными данными,
+    включая этапы обучения, тестирования и внедрения.
 \end{enumerate}
 
-Since the basic architecture of ModernBERT has already been established, the present study focuses on its domain adaptation.
-Among the available adaptation methods --- fine-tuning, complete retraining, and domain-adaptive pretraining --- the latter is emphasized
-in this work (see Section 1.3.2), as it minimizes time, computational, and financial costs.
+Важно отметить, что конечной целью подобного инструмента стоит автономное эффективное финансовое прогнозирование, которое
+бы согло быть с легкостью интерпретировано финансовым аналитиком, который контролирует систему. Стоит уточнить, что речь
+идет об эффективном финансовом прогнозировании именно с точки зрения теории эффективности рынка (EMT) \parencite{emt1970fama}.
 
-Within the scope of this research, hierarchical aspect-based analysis of financial publications (see Section 3.2) is considered
-an effective task for financial forecasting. The object of the study is investment strategies based on the use of artificial intelligence,
-while the subject is the integration of language models into asset price forecasting processes. The goal of this work is to develop
-a practice-oriented toolkit for dynamic multimodal forecasting using aspect-based sentiment analysis. It is important to emphasize
-that a key requirement for the proposed solution is its interpretability, in contrast to other approaches that employ deep neural
-networks as black-box models.
+Итак, поскольку базовая архитектура ModernBERT уже разработана, а методы прогнозирования финансовых активов при помощи нейронных
+сетей достаточно изучены, настоящее исследование фокусируется разработке инструментария для повышения как эффективности, так и
+интерпретируемости финансового прогнозирования. Причем исследование формулирует цель достичь повышения эффективности прогнозирование,
+не за счет количественного или итеративного улучшения имеющихся методов, а за счет изучения принципиально новых областей и качетсвенного
+технологического скачка, заключающегося в новой парадигме финансового прогнозирования. Так, настоящее исследование предлагает
+достичь качественного скачка за счет улучшения данных используемы для прогнозирования.
 
-Throughout the study, the following key tasks were undertaken:
+Данная задача, как отмечалось ранее, комплексна и крайне трудна. Поэтому текущая работа фокусируется не на самом финансовом прогнозировании,
+а на разработке инструментария, технологии и комплекса методов, которые сделают возможным в последующих исследованиях качественный рывок
+в целевой задаче.
+
+Так, на данный момент, в финансовом прогнозировании LLM используются в крайне узком спектре, так как сама технология относительно нова.
+Тем не менее, уже есть первые попытки использовать языковые модели для анализа тональности новостей и интеграции тональностей в процесс
+прогнозирования, причем несмотря на ограниченность ресурсов, методов и технологий данный подход зарекомендовал себя как достаточно
+эффективный. В частности, модели, применяющие тональности в финансовом прогнозирвании показывают результаты выше тех, что делают
+прогнозы, основываясь исключительно на количественных данных \parencite{Kim2023, Jiang2023, Halder2022}. Однако, применимость текстовой
+модальности для финансового прогнозирования на данный момент крайне ограничено и новым направлением, пока еще не нашедшем применение
+в финансах является аспекто-ориентированый сентиментальный анализ \parencite{SA2020taxonomy,FSA2020problems} и тематическое моделирование
+\parencite{angelov2020top2vec,BERTopic2022}.
+
+Таким образом, объектом исследования являются инвестиционные стратегии, основанные на методах искусственного интеллекта, а предметом ---
+инструментарий для интеграции языковых моделей, а также методов тематического моделирования и анализа тональностей в процесс прогнозирования
+стоимости активов. Цель работы заключается в создании практико-ориентированного интерпретируемого инструментария, на основе которого станет
+возможным разработать систему для динамического мультимодального прогнозирования с использованием иерархического аспекто-ориентированного
+сентиментального анализа. Отдельно стоит подчеркнуть, что ключевым условием предложенного решения является его интерпретируемость
+в отличие от других решений, использующих глубокие нейронные сети как черный ящик.
+
+На протяжении исследования были выполнены следующие работы:
+
 \begin{itemize}
-    \item Selection and analysis of SoTA architectures and models (see Section 1.3.1).
-    \item Investigation of cutting-edge techniques and algorithms to enhance the performance of deep neural networks (see Section 1.3.2).
-    \item Evaluation of various metrics, datasets, and benchmarks to assess the efficiency of the final solution (see Section 1.4).
-    \item Determination of the technology stack for developing the solution (see Section 1.5).
+    \item Анализ и выбор современных и наиболее эффективных архитектур и моделей (см. Разделы \hyperref[sec:ml_algos]{1.2} и
+    \hyperref[sec:models]{1.3}) для целевой задачи.
+    \item Проектирование концепта прицнипиально новой системной архитектуры для эффективного финансового прогнозирования
+    (см. Раздел \hyperref[sec:architecture]{3.1}).
+    \item Разработка финансовой аспекто-ориентированной гибридной семантической системы (Financial Aspect-Based hybrid Semantic System, FinABYSS),
+    направленной на реализацию необходимых системных комонент для интерпретируемой финансовой аналитики на мультимодальных данных
+    (см. Раздел \hyperref[sec:components]{3.2}).
+    \item Сбор большого и исчерпывающего корпуса финансовых публикаций размером более 15Гб, пригодного для использования в смежных финансовых исследованиях
+    (см. Раздел \hyperref[sec:data_governance]{2.2}).
 \end{itemize}
 
-In total, more than 6 GB of exclusively financial texts were collected for the domain adaptation of ModernBERT (see Section 2.2.2).
-Following comprehensive analysis and preprocessing of the data (see Sections 2.2.3 and 2.2.4, respectively), the domain adaptation
-of the model was performed (see Section 2.3) and inference was conducted on the task of hierarchical clustering of texts
-(see Section 2.4). The final outcome includes a comparison of key benchmarks between the original and the domain-adapted models
-(see Section 3.1), analysis and interpretation of the results obtained from the hierarchical clustering of financial
- publications (see Section 3.2), as well as the development of a multimodal architecture for dynamic asset forecasting based
- on aspect-based sentiment analysis (see Section 3.3) and a mathematical framework for semantic deduplication of texts
- (see Section 3.4).
-
- All the results of this study, including data collection code, training code, analyses, and results are available
- in the official repository of the project\footnote{URL: \url{https://github.com/denisalpino/FinABYSS}}.
- The domain-adapted model\footnote{URL: None} and the collected
- corpus\footnote{URL: \url{https://huggingface.co/datasets/denisalpino/YahooFinanceNewsRaw}} are also publicly available.
+Все результаты данного исследования, включая код для сбора данных, обучающий код, результаты анализ данных и моделей, а также сами модели доступны
+в официальном GitHub репозитории проекта\footnote{FinABYSS (Financial Aspect-Based hybrid Semantic System) [Electronic resource] //
+Томин Д.В. --- 2025 --- URL: \url{https://github.com/denisalpino/FinABYSS} (Дата обращения: 26.05.2025). --- Режим доступа: по запросу.}.
+Собранный корпус доступен в репозитории HuggingFace\footnote{YahooFinanceNewsRaw [Electronic resource] //
+Томин Д.В. --- 2025 --- URL: \url{https://huggingface.co/datasets/denisalpino/YahooFinanceNewsRaw} (Дата обращения: 20.04.2025). --- Режим доступа: по запросу.}.
