@@ -59,36 +59,33 @@
 источников оказались:
 
 \begin{itemize}
-    \item Новостные издания: Bloomberg\footnote{URL: \url{https://www.bloomberg.com/}},
-    The New York Times\footnote{URL: \url{https://www.nytimes.com/}},
-    Reuters\footnote{URL: \url{https://www.reuters.com/}}, etc;
-    \item Аналитические платформы: Seeking Alpha\footnote{URL: \url{https://seekingalpha.com/}},
-    TradingView\footnote{URL: \url{https://tradingview.com/}};
+    \item Новостные издания: Bloomberg, The New York Times, Reuters, и другие;
+    \item Аналитические платформы: Seeking Alpha, TradingView;
     \item Официальные сайты: корпоративные и правительственные порталы.
 \end{itemize}
 
 При анализе более 50 корпоративных и более 100 правительственных ресурсов установлено,
-что благодаря наличию RSS-лентам, пресс‑релизы централизованно агрегируются через PR Newswire\footnote{URL: \url{https://www.cision.com/}}
-и GlobeNewswire\footnote{URL: \url{https://www.globenewswire.com/}}. Имеется и ряд других автоматических агрегаторов, например,
-Business Wire\footnote{URL: \url{https://www.businesswire.com/}}),
+что благодаря наличию RSS-лентам, пресс‑релизы централизованно агрегируются через PR Newswire
+и GlobeNewswire. Имеется и ряд других автоматических агрегаторов, например,
+Business Wire,
 ACCESS Newswire и других, однако эмпирически было выявлено, что среди подобных агрегаторов
 доминируют PR Newswire и GlobeNewswire. Тем не менее, данные агрегаторы не дают разнообразия жанров.
 
 Из новостных изданий по скорости реакции и охвату рынков оптимальной признана служба Reuters.
-Также было изучено несколько более узких, но качественных источников (например, The Information\footnote{URL: \url{https://www.theinformation.com/}},
-Epoch AI\footnote{URL: \url{https://epoch.ai/}}), однако они содержат слишком узкоспециализированную информацию, в то время как более
-традиционные источники по типу Bloomberg, Wall Street Journal\footnote{URL: \url{https://www.wsj.com/}},
-The Economist\footnote{URL: \url{https://www.economist.com/}} и другие покрывают более обширную часть рынков, однако технически ограничены.
+Также было изучено несколько более узких, но качественных источников (например, The Information,
+Epoch AI, однако они содержат слишком узкоспециализированную информацию, в то время как более
+традиционные источники по типу Bloomberg, Wall Street Journal,
+The Economist и другие покрывают более обширную часть рынков, однако технически ограничены.
 
-Среди аналитических платформ Seeking Alpha уступает из‑за большого объёма платного контента,
+Среди аналитических платформ Seeking Alpha уступает из‑за большого объёма платного контента,
 а TradingView не обеспечивает доступ к историческим публикациям.
 
 Таким образом, основными первичными источниками корпуса стали PR Newswire и Reuters. Однако, чтобы снизить риск
 систематической предвзятости и обеспечить дополнительный охват, принято решение обогатить корпус другими
 издательствами, но в силу их разрозненности, отсутствия API, а также зачастую и полной информации о статье
 (включая время публикации с точностью о секунды), агрегировать и синхронизировать данные не представляется возможным.
-Так, дополнительно были рассмотрены агрегаторы Google Finance\footnote{URL: \url{https://www.google.com/finance/}},
-Yahoo! Finance\footnote{URL: \url{https://finance.yahoo.com/}} и FinURLs\footnote{URL: \url{https://finurls.com/}}.
+Так, дополнительно были рассмотрены агрегаторы Google Finance,
+Yahoo! Finance и FinURLs.
 
 В итоге предпочтение отдано Yahoo! Finance благодаря унифицированной схеме сайта и широкому отражению разнообразных
 источников, тогда как FinURLs использует переадресацию на сайты источников, каждый из которых имеет свою собственную
@@ -136,7 +133,8 @@ Yahoo! Finance\footnote{URL: \url{https://finance.yahoo.com/}} и FinURLs\footno
 
 
 Итоговый класс реализующий программу-парсер, находится в официальном репозитории проекта, называясь
-'YahooFinanceParser'\footnote{URL: \url{https://github.com/denisalpino/FinABYSS}}.
+'YahooFinanceParser'\footnote{FinABYSS (Financial Aspect-Based hybrid Semantic System) [Electronic resource] //
+Томин Д.В. --- 2025 --- URL: \url{https://github.com/denisalpino/FinABYSS} (Дата обращения: 26.05.2025). --- Режим доступа: по запросу.}.
 
 \subsubsection{Анализ данных}
 \label{sec:data_analysis}
