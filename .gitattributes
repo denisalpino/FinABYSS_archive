@@ -4,3 +4,4 @@ notebooks/aspects/models/**/*.bin filter=lfs diff=lfs merge=lfs -text
 *.bin filter=lfs diff=lfs merge=lfs -text
 notebooks/aspects/data/** filter=lfs diff=lfs merge=lfs -text
 *.html linguist-generated=true
+*.ipynb linguist-generated=true
